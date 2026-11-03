@@ -1,0 +1,1706 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Year of the First Crew</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e13;
+    --panel: #11171f;
+    --panel-2: #161e28;
+    --line: #232e3b;
+    --line-2: #2f3c4c;
+    --text: #e6ebf1;
+    --muted: #8a97a8;
+    --faint: #5b6778;
+    --accent: #f2a541;
+    --time: #57c7e8;
+    --ok: #5bd18b;
+    --med: #f2c14e;
+    --high: #ff6b5e;
+    --none: #6f7c8d;
+    --night: rgba(120, 140, 170, .10);
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --sans: "IBM Plex Sans", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 var(--sans);
+    min-height: 100vh;
+  }
+  button { font: inherit; cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  /* --- nagłówek --- */
+  .top {
+    position: sticky; top: 0; z-index: 5;
+    background: rgba(10, 14, 19, .94);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+  }
+  .top-row {
+    max-width: 1180px; margin: 0 auto; padding: 10px 16px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px;
+  }
+  .brand { font: 600 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-right: auto; }
+  .brand b { color: var(--accent); font-weight: 600; }
+  .stat { display: flex; flex-direction: column; min-width: 0; }
+  .stat small { font: 500 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+  .stat span { font: 500 15px var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #statDate { color: var(--time); }
+  #statSchedule.pos { color: var(--ok); }
+  #statSchedule.neg { color: var(--high); }
+  .trust-bar { width: 120px; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin-top: 5px; }
+  .trust-bar i { display: block; height: 100%; background: var(--ok); transition: width .6s ease, background .6s; }
+  #statTrustLabel { font-size: 13px; }
+
+  /* --- oś czasu --- */
+  .timeline-wrap { max-width: 1180px; margin: 0 auto; padding: 14px 16px 4px; }
+  .track { position: relative; height: 74px; }
+  .rail { position: absolute; left: 0; right: 0; top: 34px; height: 4px; border-radius: 2px; background: var(--line); }
+  .fill { position: absolute; left: 0; top: 34px; height: 4px; border-radius: 2px; background: var(--time); width: 0; transition: width 1.1s cubic-bezier(.4, 0, .2, 1); }
+  .night { position: absolute; top: 18px; height: 36px; background: var(--night); border-radius: 3px; }
+  .month { position: absolute; top: 56px; transform: translateX(-50%); font: 10px var(--mono); color: var(--faint); text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+  .tick { position: absolute; top: 40px; width: 1px; height: 12px; background: var(--line-2); }
+  .mk {
+    position: absolute; top: 36px; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%;
+    border: 2px solid var(--line-2); background: var(--bg); transition: background .3s, border-color .3s, transform .3s;
+  }
+  .mk.current { border-color: var(--time); box-shadow: 0 0 0 4px rgba(87, 199, 232, .18); animation: pulse 1.8s infinite; }
+  .mk.done { border-color: transparent; }
+  .mk.lvl-none { background: var(--none); }
+  .mk.lvl-low { background: var(--ok); }
+  .mk.lvl-med { background: var(--med); }
+  .mk.lvl-high { background: var(--high); }
+  .mk.safe { background: var(--time); }
+  .mk.incident::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--high); }
+  .dl { position: absolute; top: 8px; transform: translateX(-50%); font-size: 11px; color: var(--accent); line-height: 1; }
+  .dl::after { content: ""; position: absolute; left: 50%; top: 13px; width: 1px; height: 10px; background: var(--accent); opacity: .5; }
+  .now { position: absolute; top: 14px; height: 44px; width: 2px; margin-left: -1px; background: var(--time); left: 0; transition: left 1.1s cubic-bezier(.4, 0, .2, 1); }
+  .now b { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font: 600 10px var(--mono); color: var(--time); white-space: nowrap; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font: 11px var(--mono); color: var(--faint); padding: 2px 0 0; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+  .legend .nightkey { border-radius: 2px; background: rgba(120, 140, 170, .25); }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 7px rgba(87, 199, 232, .06); } }
+
+  /* --- scena --- */
+  .stage { max-width: 1180px; margin: 0 auto; padding: 12px 16px 40px; display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px 20px;
+    animation: enter .45s cubic-bezier(.2, .7, .2, 1);
+  }
+  @keyframes enter { from { opacity: 0; transform: translateY(14px); } }
+  .card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-bottom: 4px; }
+  .card-date { font: 600 13px var(--mono); color: var(--time); }
+  .card-type { font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); border: 1px solid rgba(242, 165, 65, .35); border-radius: 999px; padding: 1px 9px; }
+  .card-count { margin-left: auto; font: 11px var(--mono); color: var(--faint); }
+  .card h2 { font-size: 22px; line-height: 1.25; margin: 6px 0 10px; text-wrap: balance; }
+  .card p.sit { color: #c9d2dd; margin: 0 0 14px; max-width: 68ch; }
+  .facts { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; }
+  .fact { font: 12px var(--mono); color: var(--muted); background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px; }
+  .fact b { color: var(--text); font-weight: 500; }
+
+  .options { display: grid; gap: 10px; }
+  .opt {
+    text-align: left; width: 100%; color: var(--text); background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 10px; padding: 13px 15px;
+    transition: border-color .15s, background .15s, transform .15s;
+  }
+  .opt:hover:not(:disabled) { border-color: #4a5a6e; }
+  .opt[aria-pressed=true] { border-color: var(--time); background: #13232d; }
+  .opt:disabled { opacity: .45; cursor: not-allowed; }
+  .opt-title { font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .opt-desc { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .opt-risk { font-size: 13.5px; margin-top: 8px; padding-left: 10px; border-left: 2px solid var(--line-2); color: #c9d2dd; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { font: 500 11.5px var(--mono); border-radius: 5px; padding: 2px 7px; background: #1c2633; color: var(--muted); white-space: nowrap; }
+  .chip.neg { color: #ffb3ab; background: rgba(255, 107, 94, .12); }
+  .chip.pos { color: #a8ecc4; background: rgba(91, 209, 139, .12); }
+  .risk { font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; border-radius: 5px; padding: 2px 8px; }
+  .risk.none { background: rgba(111, 124, 141, .2); color: #b5c0cd; }
+  .risk.low { background: rgba(91, 209, 139, .15); color: var(--ok); }
+  .risk.med { background: rgba(242, 193, 78, .15); color: var(--med); }
+  .risk.high { background: rgba(255, 107, 94, .15); color: var(--high); }
+
+  .sign { margin-top: 16px; display: grid; gap: 10px; }
+  .sign input, .field textarea, .field input {
+    width: 100%; font: inherit; font-size: 14px; color: var(--text); background: var(--bg); border: 1px solid var(--line-2); border-radius: 8px; padding: 9px 11px;
+  }
+  .sign input:focus, .field textarea:focus, .field input:focus { outline: none; border-color: var(--time); }
+  .row-end { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+  .btn { border: 1px solid var(--line-2); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 9px 16px; font-weight: 500; }
+  .btn:hover:not(:disabled) { border-color: #4a5a6e; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #1a1205; font-weight: 600; }
+  .btn.primary:hover:not(:disabled) { filter: brightness(1.07); }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  .outcome { margin-top: 4px; }
+  .outcome .chosen { font: 12px var(--mono); color: var(--muted); margin-bottom: 8px; }
+  .outcome .chosen b { color: var(--text); font-weight: 600; }
+  .outcome p { margin: 0 0 10px; max-width: 68ch; }
+  .outcome .tag { display: inline-block; font: 600 11px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 5px; margin-bottom: 8px; }
+  .tag.win { background: rgba(91, 209, 139, .15); color: var(--ok); }
+  .tag.bad { background: rgba(255, 107, 94, .15); color: var(--high); }
+  .tag.close { background: rgba(242, 193, 78, .15); color: var(--med); }
+  .tag.covered { background: rgba(87, 199, 232, .15); color: var(--time); }
+  .banner { border: 1px solid rgba(255, 107, 94, .4); background: rgba(255, 107, 94, .08); border-radius: 8px; padding: 10px 12px; font-size: 14px; margin: 10px 0; }
+
+  /* --- panel bazy --- */
+  .base { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; position: sticky; top: 74px; }
+  .base h3, .log h3 { font: 600 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+  .base .hint { font-size: 12px; color: var(--faint); margin: 0 0 12px; }
+  .base h3 { margin-bottom: 8px; }
+  .fn { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 4px; border-radius: 6px; cursor: help; }
+  .fn-name { font-size: 14px; font-weight: 500; }
+  .segs { display: flex; gap: 3px; }
+  .segs i { width: 18px; height: 8px; border-radius: 2px; background: var(--line); transition: background .4s; }
+  .segs i.on.l1 { background: var(--high); }
+  .segs i.on.l2 { background: #f08a4b; }
+  .segs i.on.l3 { background: var(--med); }
+  .segs i.on.l4 { background: #9ad86a; }
+  .segs i.on.l5 { background: var(--ok); }
+  .fn.flash { animation: flash 1.2s; }
+  @keyframes flash { 20% { background: rgba(87, 199, 232, .12); } }
+  .support { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 10px; font: 12px var(--mono); color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .support b { color: var(--text); font-weight: 500; }
+
+  .log { max-width: 1180px; margin: 0 auto; padding: 0 16px 50px; }
+  .log ol { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+  .log li { font-size: 13px; color: var(--muted); display: flex; gap: 10px; }
+  .log li time { font: 12px var(--mono); color: var(--faint); min-width: 92px; }
+  .log li.k-delivery { color: #f5c98a; }
+  .log li.k-bad { color: #ffb3ab; }
+  .log li.k-good { color: #a8ecc4; }
+
+  .travel { font: 600 12px var(--mono); color: var(--time); text-align: center; padding: 30px 0; letter-spacing: .08em; }
+
+  /* --- intro i raport --- */
+  .screen { max-width: 860px; margin: 0 auto; padding: 36px 16px 60px; animation: enter .5s; }
+  .kicker { font: 600 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+  .screen h1 { font-size: clamp(30px, 6vw, 46px); line-height: 1.08; margin: 10px 0 14px; letter-spacing: -.01em; }
+  .lead { font-size: 18px; color: #c9d2dd; max-width: 62ch; margin: 0 0 26px; }
+  .about { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 0 0 8px; max-width: 70ch; display: grid; gap: 8px; }
+  .about p { margin: 0; font-size: 16px; color: #c9d2dd; }
+  .about b { color: var(--text); }
+  .about .about-note { font-size: 13.5px; color: var(--muted); }
+  .pressure { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 26px; }
+  @media (max-width: 760px) { .pressure { grid-template-columns: minmax(0, 1fr); } }
+  .pcard { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .pcard h3 { margin: 6px 0 6px; font-size: 16px; }
+  .pcard p { margin: 0; font-size: 14px; color: var(--muted); }
+  .pcard .num { font: 600 13px var(--mono); color: var(--accent); }
+  .pcard.clock .num { color: var(--high); }
+  .pcard.trust .num { color: var(--ok); }
+  .howto { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 0 0 22px; font-size: 14.5px; color: #c9d2dd; }
+  .howto ul { margin: 6px 0 0; padding-left: 18px; }
+  .howto li { margin: 3px 0; }
+  .field { display: grid; gap: 6px; margin: 0 0 16px; }
+  .field label { font-size: 13px; color: var(--muted); }
+  .start-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .small-link { background: none; border: 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; padding: 0; font-size: 13px; }
+
+  .verdict { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; margin: 0 0 16px; }
+  .verdict .arche { font-size: 26px; font-weight: 700; margin: 4px 0 6px; }
+  .verdict p { margin: 0; color: #c9d2dd; }
+  .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0 0 16px; }
+  @media (max-width: 700px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .box h3 { font: 600 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+  .big { font: 600 28px var(--mono); font-variant-numeric: tabular-nums; }
+  .big.pos { color: var(--ok); } .big.neg { color: var(--high); }
+  .box ul { margin: 6px 0 0; padding-left: 18px; font-size: 14px; color: #c9d2dd; }
+  .box li { margin: 4px 0; }
+  .moments { display: grid; gap: 8px; margin: 0 0 16px; }
+  .moment { background: var(--panel); border: 1px solid var(--line); border-left-width: 3px; border-radius: 10px; padding: 10px 14px; font-size: 14px; color: #c9d2dd; }
+  .moment.win { border-left-color: var(--ok); }
+  .moment.cf { border-left-color: var(--time); }
+  .moment.bad { border-left-color: var(--high); }
+  .moment.close { border-left-color: var(--med); }
+  .moment small { display: block; font: 600 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .path { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 0 0 16px; }
+  .path td { border-top: 1px solid var(--line); padding: 7px 6px; vertical-align: top; }
+  .path td:first-child { font: 12px var(--mono); color: var(--faint); white-space: nowrap; }
+  .path .why { color: var(--muted); font-style: italic; }
+  .radio-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .radio-row label { border: 1px solid var(--line-2); border-radius: 8px; padding: 6px 12px; font-size: 14px; cursor: pointer; }
+  .radio-row input { margin-right: 6px; }
+  .saved { font-size: 13px; color: var(--ok); }
+  h2.sec { font: 600 12px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 26px 0 10px; }
+  .agg { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .agg td, .agg th { border-top: 1px solid var(--line); padding: 6px; text-align: left; vertical-align: top; }
+  .agg th { font: 500 11px var(--mono); color: var(--faint); text-transform: uppercase; }
+  .bar { height: 6px; border-radius: 3px; background: var(--time); margin-top: 3px; }
+  .debug { font: 11px var(--mono); color: #c39bff; }
+  .intro-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .lang { display: inline-flex; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; }
+  .lang button { background: transparent; color: var(--muted); border: 0; padding: 5px 12px; font: 600 12px var(--mono); letter-spacing: .08em; }
+  .lang button[aria-pressed=true] { background: var(--panel-2); color: var(--text); }
+  .lang button:focus-visible { outline: 2px solid var(--time); outline-offset: -2px; }
+</style>
+</head>
+<body>
+
+<!-- ============ INTRO ============ -->
+<section id="intro" class="screen"></section>
+
+<!-- ============ GRA ============ -->
+<div id="game" hidden>
+  <header class="top">
+    <div class="top-row">
+      <div class="brand"><b data-t="title"></b></div>
+      <div class="stat"><small data-t="statDate"></small><span id="statDate">—</span></div>
+      <div class="stat"><small data-t="statReport"></small><span id="statReport">—</span></div>
+      <div class="stat"><small data-t="statSchedule"></small><span id="statSchedule">—</span></div>
+      <div class="stat"><small data-t="statTrust"></small><span id="statTrustLabel">—</span><div class="trust-bar"><i id="statTrustBar"></i></div></div>
+    </div>
+  </header>
+
+  <div class="timeline-wrap">
+    <div class="track" id="track"></div>
+    <div class="legend">
+      <span><i style="background:var(--time)"></i><span data-t="legSafe"></span></span>
+      <span><i style="background:var(--ok)"></i><span data-t="legLow"></span></span>
+      <span><i style="background:var(--med)"></i><span data-t="legMed"></span></span>
+      <span><i style="background:var(--high)"></i><span data-t="legHigh"></span></span>
+      <span><i class="nightkey"></i><span data-t="legNight"></span></span>
+      <span style="color:var(--accent)">▼ <span data-t="legDelivery"></span></span>
+    </div>
+  </div>
+
+  <main class="stage">
+    <div id="cardArea"></div>
+    <aside class="base" id="basePanel"></aside>
+  </main>
+
+  <section class="log">
+    <h3 data-t="logTitle"></h3>
+    <ol id="logList"></ol>
+  </section>
+</div>
+
+<!-- ============ RAPORT ============ -->
+<section id="report" class="screen" hidden></section>
+
+<script>
+"use strict";
+
+// ---------- parametry testu (URL) ----------
+// ?debug=1      punkty, rzuty i macierz ryzyka widoczne
+// ?price=0      bez opisu ryzyka przy opcjach (test: czy jawna cena zmienia wybory)
+// ?freeLow=1    ryzyko niskie nie zużywa budżetu
+// ?limit=24     roczny limit punktów ryzyka
+// ?lang=pl      język startowy (domyślnie angielski albo ostatnio wybrany)
+// ?results=1    link do lokalnych wyników na ekranie startowym (widok autora, po polsku)
+const PARAMS = new URLSearchParams(location.search);
+const DEBUG = PARAMS.has("debug");
+const SHOW_PRICE = PARAMS.get("price") !== "0";
+const FREE_LOW = PARAMS.get("freeLow") === "1";
+const LIMIT = Number(PARAMS.get("limit")) || 24;
+const SHOW_RESULTS = DEBUG || PARAMS.has("results");
+const VERSION = "v1";
+const STORE_KEY = "decision-map-runs";
+const LANG_KEY = "decision-map-lang";
+
+// ---------- język ----------
+// Teksty są parami {en, pl} przy miejscu użycia; język wybiera się na ekranie startowym i nie zmienia w trakcie gry.
+let LANG = (() => {
+  const q = PARAMS.get("lang");
+  if (q === "en" || q === "pl") return q;
+  try {
+    const v = localStorage.getItem(LANG_KEY);
+    if (v === "en" || v === "pl") return v;
+  } catch { /* prywatne okno */ }
+  return "en";
+})();
+const tr = (en, pl) => (LANG === "pl" ? pl : en);
+const tx = (v, s) => {
+  if (typeof v === "function") return v(s);
+  if (v && typeof v === "object" && "en" in v) return tx(v[LANG], s);
+  return v;
+};
+const q = (t) => tr(`“${t}”`, `„${t}”`);
+
+const UI = {
+  title: { en: "Year of the First Crew", pl: "Rok pierwszej załogi" },
+  statDate: { en: "Date", pl: "Data" },
+  statReport: { en: "To report", pl: "Do raportu" },
+  statSchedule: { en: "Schedule", pl: "Harmonogram" },
+  statTrust: { en: "Trust reserve", pl: "Zapas zaufania" },
+  legSafe: { en: "safe", pl: "bezpiecznie" },
+  legLow: { en: "low risk", pl: "ryzyko niskie" },
+  legMed: { en: "medium", pl: "średnie" },
+  legHigh: { en: "high", pl: "wysokie" },
+  legNight: { en: "night", pl: "noc" },
+  legDelivery: { en: "delivery from Earth", pl: "dostawa z Ziemi" },
+  logTitle: { en: "Mission log", pl: "Dziennik misji" },
+};
+
+function applyStatic() {
+  document.documentElement.lang = LANG;
+  document.title = tx(UI.title);
+  document.querySelectorAll("[data-t]").forEach((el) => { el.textContent = tx(UI[el.dataset.t]); });
+}
+
+// ---------- czas ----------
+const DAY = 86400000;
+const D = (s) => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10));
+const MON = {
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  pl: ["sty", "lut", "mar", "kwi", "maj", "cze", "lip", "sie", "wrz", "paź", "lis", "gru"],
+};
+const fmt = (t) => {
+  const d = new Date(t), m = MON[LANG][d.getUTCMonth()];
+  return tr(`${m} ${d.getUTCDate()}, ${d.getUTCFullYear()}`, `${d.getUTCDate()} ${m} ${d.getUTCFullYear()}`);
+};
+const fmtShort = (t) => {
+  const d = new Date(t), m = MON[LANG][d.getUTCMonth()];
+  return tr(`${m} ${d.getUTCDate()}`, `${d.getUTCDate()} ${m}`);
+};
+const daysBetween = (a, b) => Math.round((b - a) / DAY);
+const dayWord = (n) => (n === 1 ? tr("day", "dzień") : tr("days", "dni"));
+const plDays = (n) => { n = Math.max(0, Math.floor(n)); return `${n} ${dayWord(n)}`; };
+const signed = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : "0");
+const sDays = (n) => `${signed(n)} ${dayWord(Math.abs(n))}`;
+const kits = (n) => (Math.abs(n) === 1 ? tr("spare part kit", "zestaw części") : tr("spare part kits", "zestawy części"));
+
+const T_START = D("2031-07-08");
+const T_END = D("2032-07-08");
+const FIRST_NIGHT = D("2031-08-11");
+const SYNODIC = 29.53;
+const NIGHT_LEN = 14.77;
+
+// ---------- model: funkcje bazy ----------
+// name: wiersz panelu; gen: zasób w zdaniu („tlenu starczy”, „oxygen lasts”); realizer: urządzenie.
+const FUNCS = {
+  o2:    { name: { en: "Oxygen", pl: "Tlen" },            gen: { en: "oxygen", pl: "tlenu" },   realizer: { en: "electrolyzer", pl: "elektrolizer" },     repair: 5, regen: 0.3, critical: true },
+  power: { name: { en: "Night power", pl: "Prąd w nocy" }, gen: { en: "power", pl: "prądu" },    realizer: { en: "battery bank", pl: "zestaw baterii" },    repair: 4, regen: 1,   critical: true },
+  water: { name: { en: "Water", pl: "Woda" },             gen: { en: "water", pl: "wody" },     realizer: { en: "water system", pl: "instalacja wody" },   repair: 3, regen: 0.4, critical: true },
+  food:  { name: { en: "Food", pl: "Jedzenie" },          gen: { en: "food", pl: "jedzenia" },  realizer: { en: "greenhouse", pl: "szklarnia" },           repair: 7, regen: 0,   critical: false },
+};
+const CRITICAL = Object.keys(FUNCS).filter((k) => FUNCS[k].critical);
+const CARGO = {
+  electrolyzer: { name: { en: "a second electrolyzer", pl: "drugi elektrolizer" } },
+  battery: { name: { en: "a second battery bank", pl: "drugi zestaw baterii" } },
+  greenhouse: { name: { en: "a Greenhouse Mk2 kit", pl: "zestaw szklarni Mk2" } },
+  parts: { name: { en: "three spare part kits", pl: "trzy zestawy części" } },
+};
+
+function initState() {
+  return {
+    date: T_START, schedule: 0, spent: 0, commission: false, crises: 0,
+    parts: 1, rovers: 2, cargo: null,
+    f: {
+      o2:    { realizers: 1, stock: 12,  cap: 12 },
+      power: { realizers: 1, stock: 2,   cap: 2 },
+      water: { realizers: 1, stock: 30,  cap: 30 },
+      food:  { realizers: 1, stock: 110, cap: 110 },
+    },
+    deliveries: [
+      { id: "d1", date: D("2031-09-12"), parts: 2, label: { en: "September delivery", pl: "Dostawa wrześniowa" }, done: false },
+      { id: "d2", date: D("2031-12-14"), parts: 1, label: { en: "December delivery", pl: "Dostawa grudniowa" }, done: false },
+      { id: "d3", date: D("2032-04-20"), parts: 2, label: { en: "April delivery", pl: "Dostawa kwietniowa" }, done: false },
+    ],
+    pending: [],
+  };
+}
+
+function nextDelivery(s) {
+  return s.deliveries.filter((d) => !d.done && d.date > s.date).sort((a, b) => a.date - b.date)[0] || null;
+}
+function daysToNext(s) { const n = nextDelivery(s); return n ? daysBetween(s.date, n.date) : 60; }
+function restoreDays(s, fn) {
+  const base = FUNCS[fn].repair;
+  return s.parts > 0 && s.rovers > 0 ? base : daysToNext(s) + base;
+}
+function partsNote(s) {
+  return s.parts > 0 && s.rovers > 0
+    ? tr("spare parts on base", "części są w bazie")
+    : tr(`no spare parts, next delivery in ${plDays(daysToNext(s))}`, `części brak, przylecą za ${plDays(daysToNext(s))}`);
+}
+
+// Skutek: 0 odporna (N+1), 1 zapas ≥ 2× przywrócenie, 2 zapas ≥ przywrócenie, 3 zapas < przywrócenie.
+function fnSeverity(s, fn, opts = {}) {
+  const F = s.f[fn];
+  const real = opts.single ? 1 : F.realizers;
+  if (real >= 2) return 0;
+  const r = opts.restore ? opts.restore(s) : restoreDays(s, fn);
+  if (F.stock >= 2 * r) return 1;
+  if (F.stock >= r) return 2;
+  return 3;
+}
+function severity(s, risk) { return risk.severity ? risk.severity(s) : fnSeverity(s, risk.fn, risk); }
+
+const LEVEL_LABEL = {
+  none: { en: "no risk", pl: "brak ryzyka" },
+  low: { en: "low risk", pl: "ryzyko niskie" },
+  med: { en: "medium risk", pl: "ryzyko średnie" },
+  high: { en: "high risk", pl: "ryzyko wysokie" },
+};
+function level(L, S) { const v = L * S; return v === 0 ? "none" : v <= 2 ? "low" : v <= 4 ? "med" : "high"; }
+function points(lvl) { return { none: 0, low: FREE_LOW ? 0 : 2, med: 6, high: 12 }[lvl]; }
+const chance = (L) => L * 0.15;
+
+function describeRisk(s, risk) {
+  if (risk.describe) return risk.describe(s);
+  const F = s.f[risk.fn], M = FUNCS[risk.fn], dev = tx(M.realizer), res = tx(M.gen);
+  if (!risk.single && F.realizers >= 2) {
+    return tr(`If the ${dev} breaks, the backup takes over. Nothing happens.`,
+      `Jeśli ${dev} się zepsuje, zapasowe urządzenie przejmie pracę. Nic się nie stanie.`);
+  }
+  const r = risk.restore ? risk.restore(s) : restoreDays(s, risk.fn);
+  const note = risk.restoreNote ? tx(risk.restoreNote) : partsNote(s);
+  return tr(`If the ${dev} breaks: ${res} lasts ${plDays(F.stock)}, and the repair takes about ${plDays(r)} (${note}).`,
+    `Jeśli ${dev} się zepsuje: ${res} starczy na ${plDays(F.stock)}, a naprawa potrwa ok. ${plDays(r)} (${note}).`);
+}
+
+const CRISIS_TEXT = {
+  o2: { en: "The crew switched to oxygen candles and rationing. The agency sent an emergency flight.", pl: "Załoga przeszła na świece tlenowe i racjonowanie. Agencja wysłała lot awaryjny." },
+  power: { en: "The base went into emergency mode: only the living module and comms are running.", pl: "Baza przeszła na tryb awaryjny: działa tylko moduł mieszkalny i łączność, reszta stoi." },
+  water: { en: "The crew switched to emergency water rations. Crops get the bare minimum.", pl: "Załoga przeszła na racje wody awaryjnej. Uprawy podlewane tylko w minimalnym zakresie." },
+  food: { en: "Rations cut, meal plan at the minimum.", pl: "Racje skrócone, plan żywieniowy na minimum." },
+};
+
+function loseRealizer(s, fn, risk = {}) {
+  const F = s.f[fn], M = FUNCS[fn], dev = tx(M.realizer), res = tx(M.gen);
+  if (!risk.single && F.realizers >= 2) {
+    if (s.parts > 0) s.parts -= 1;
+    return {
+      text: tr(`Failure: ${dev}. The backup took over, and the repair happened in the background.`,
+        `Awaria: ${dev}. Zapasowe urządzenie przejęło pracę, a naprawa poszła w tle.`),
+      tag: "covered", schedule: -1,
+    };
+  }
+  const r = risk.restore ? risk.restore(s) : restoreDays(s, fn);
+  if (!risk.restore && s.parts > 0 && s.rovers > 0) s.parts -= 1;
+  F.stock = Math.round((F.stock - r) * 10) / 10;
+  if (F.stock < 0) {
+    const short = Math.ceil(-F.stock);
+    F.stock = 2;
+    s.crises += 1;
+    return {
+      text: tr(`The repair took ${plDays(r)}, but ${res} ran out ${plDays(short)} before it was done. ${tx(CRISIS_TEXT[fn])}`,
+        `Naprawa trwała ${plDays(r)}, a ${res} zabrakło ${plDays(short)} przed jej końcem. ${tx(CRISIS_TEXT[fn])}`),
+      tag: "crisis", schedule: -15,
+    };
+  }
+  if (F.stock < 4) {
+    return {
+      text: tr(`The outage lasted ${plDays(r)}. Only ${plDays(F.stock)} of ${res} left. That was close.`,
+        `Przerwa trwała ${plDays(r)}. ${cap(res)} zostało tylko na ${plDays(F.stock)}. Było o włos.`),
+      tag: "close", schedule: -2,
+    };
+  }
+  return {
+    text: tr(`The outage lasted ${plDays(r)}. ${cap(res)} left: ${plDays(F.stock)}.`,
+      `Przerwa trwała ${plDays(r)}. ${cap(res)} zostało na ${plDays(F.stock)}.`),
+    tag: "outage", schedule: -2,
+  };
+}
+const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+
+// ---------- karty ----------
+// effects: zawsze; success: tylko gdy ryzyko się nie zmaterializowało; risk.roll: stały rzut (taki sam dla wszystkich testerów).
+const TYPE = {
+  cont: { en: "Keep going or stop", pl: "Kontynuować czy zatrzymać" },
+  go: { en: "Wait or go", pl: "Czekać czy iść" },
+  sturdy: { en: "Faster or sturdier", pl: "Szybciej czy solidniej" },
+  reserve: { en: "Reserve or output", pl: "Zapas czy wydajność" },
+  now: { en: "Now or later", pl: "Teraz czy później" },
+  invest: { en: "Investing in safety", pl: "Inwestycja w bezpieczeństwo" },
+  check: { en: "Check or trust", pl: "Sprawdzić czy zaufać" },
+};
+const NO_PARTS = (s) => (s.parts > 0 ? null : tr("no spare parts", "brak części"));
+
+const CARDS = [
+  {
+    id: "c01", date: "2031-07-24", type: TYPE.cont,
+    title: { en: "Electrolyzer: vibrating pump", pl: "Elektrolizer: drgania pompy elektrolitu" },
+    text: {
+      en: "Two weeks after the crew landed, the vibration sensor on the electrolyte pump crossed its warning threshold. The pump still works, but the trend is rising. The electrolyzer is the only local source of oxygen for four people.",
+      pl: "Dwa tygodnie po lądowaniu załogi czujnik drgań pompy elektrolitu przekroczył próg ostrzegawczy. Pompa pracuje, ale trend rośnie. Elektrolizer to jedyne lokalne źródło tlenu dla czterech osób.",
+    },
+    facts: ["o2", "parts", "delivery"],
+    options: [
+      {
+        id: "A", label: { en: "Keep running", pl: "Pracuj dalej" },
+        desc: { en: "Measure more often, replace the pump at the next planned stop.", pl: "Częstsze pomiary, wymiana pompy przy planowym przestoju." },
+        risk: { L: 3, fn: "o2", roll: 0.62 },
+        successText: { en: "The pump held out until the planned stop. After a speed change, the vibration settled.", pl: "Pompa dotrwała do planowego przestoju. Po zmianie obrotów drgania się ustabilizowały." },
+      },
+      {
+        id: "B", label: { en: "Stop and replace the pump", pl: "Zatrzymaj i wymień pompę" },
+        desc: { en: "The electrolyzer is down for two days while a rover fits a spare pump.", pl: "Elektrolizer stoi dwa dni, łazik montuje pompę z zapasu." },
+        effects: { schedule: -3, parts: -1, stock: { o2: -2 } },
+        requires: NO_PARTS,
+        outcome: (s) => tr(`Pump replaced. ${s.parts === 0 ? "That was the last spare part kit on the base." : ""}`,
+          `Pompa wymieniona. ${s.parts === 0 ? "To był ostatni zestaw części w bazie." : ""}`),
+      },
+    ],
+  },
+  {
+    id: "c02", date: "2031-08-09", type: TYPE.go,
+    title: { en: "Ice run before sunset", pl: "Wyprawa po lód przed zmierzchem" },
+    text: {
+      en: "A rover can bring back ice samples from the crater rim. It's the first step toward local water. Sunset is 40 hours away and the round trip takes about 34. If the rover gets stuck, the night lasts two weeks.",
+      pl: "Łazik może przywieźć próbki lodu z krawędzi krateru. To pierwszy krok do lokalnej wody. Do zachodu Słońca zostało 40 godzin, a kurs w obie strony zajmie około 34. Jeśli łazik utknie, noc potrwa dwa tygodnie.",
+    },
+    facts: ["rovers", "night"],
+    options: [
+      {
+        id: "A", label: { en: "Go now", pl: "Jedź teraz" },
+        desc: { en: "6 hours of slack on the route. A successful run speeds up the water system.", pl: "6 godzin zapasu na trasie. Udany kurs przyspiesza linię wody." },
+        risk: {
+          L: 2, roll: 0.25,
+          severity: (s) => (s.rovers >= 2 ? 0 : 2),
+          describe: (s) => (s.rovers >= 2
+            ? tr("If the rover gets stuck, the other one takes over base work, but the expedition is lost and repairs get slower.",
+              "Jeśli łazik utknie, drugi przejmie prace bazy, ale ekspedycja przepadnie, a naprawy potrwają dłużej.")
+            : tr("This is the last working rover. If it gets stuck, the base has no repairs until the night ends.",
+              "To ostatni sprawny łazik. Jeśli utknie, baza zostanie bez napraw do końca nocy.")),
+          incident: (s) => {
+            s.rovers -= 1;
+            s.pending.push({ date: D("2031-08-26"), kind: "rover_back" });
+            return {
+              text: tr("The rover got stuck in shadow 3 km from the base and waited out the night on minimal power. It will be back on Aug 26. Until then, one rover runs the base.",
+                "Łazik utknął w cieniu 3 km od bazy i przeczekał noc na minimalnym zasilaniu. Wróci 26 sierpnia. Do tego czasu bazę obsługuje jeden łazik."),
+              tag: "outage", schedule: -2,
+            };
+          },
+        },
+        success: { schedule: 4 },
+        successText: { en: "The rover came back with 6 hours to spare. The samples confirm ice, so the water system starts earlier.", pl: "Łazik wrócił z 6-godzinnym zapasem. Próbki potwierdzają lód, więc instalacja wody ruszy wcześniej." },
+      },
+      {
+        id: "B", label: { en: "Wait for sunrise", pl: "Czekaj do świtu" },
+        desc: { en: "Make the trip after the night, in 16 days.", pl: "Wyprawa po nocy, za 16 dni." },
+        effects: { schedule: -6 },
+        outcome: { en: "Trip postponed. The water team waits for the samples.", pl: "Wyprawa przesunięta. Zespół wody czeka na próbki." },
+      },
+    ],
+  },
+  {
+    id: "c03", date: "2031-08-30", type: TYPE.sturdy,
+    title: { en: "Second water tank", pl: "Drugi zbiornik wody" },
+    text: {
+      en: "A tank that holds 20 days of water is almost installed. The procedure calls for a full leak test: 5 days under pressure. A short test takes a few hours and only catches big leaks.",
+      pl: "Montaż zbiornika na 20 dni zapasu wody dobiega końca. Procedura przewiduje pełną próbę szczelności: 5 dni pod ciśnieniem. Skrócona próba trwa kilka godzin i wykrywa tylko duże nieszczelności.",
+    },
+    facts: ["water"],
+    options: [
+      {
+        id: "A", label: { en: "Full leak test", pl: "Pełna próba szczelności" },
+        desc: { en: "5 days; the tank is filled only after the test.", pl: "5 dni, zbiornik napełniony dopiero po próbie." },
+        effects: { schedule: -5, cap: { water: 20 }, stock: { water: 20 } },
+        outcome: { en: "The test found a small leak at a joint. Sealed before filling.", pl: "Próba wykazała mały przeciek na łączeniu. Uszczelniony przed napełnieniem." },
+      },
+      {
+        id: "B", label: { en: "Short test", pl: "Skrócona próba" },
+        desc: { en: "A few hours. The tank goes into use right away.", pl: "Kilka godzin. Zbiornik od razu w użyciu." },
+        effects: { cap: { water: 20 }, stock: { water: 20 } },
+        risk: {
+          L: 2, roll: 0.18,
+          severity: (s) => (s.f.water.stock + 20 - 15 < 2 * restoreDays(s, "water") ? 2 : 1),
+          describe: () => tr("If the test misses a leak, you'll lose part of the new water reserve (up to about 15 days).",
+            "Jeśli próba przeoczy nieszczelność, stracisz część nowego zapasu wody (do ok. 15 dni)."),
+          incident: (s) => {
+            s.f.water.stock = Math.max(0, s.f.water.stock - 15);
+            return {
+              text: tr(`A week later the sensors showed the level dropping: a small leak at a joint. Before it was sealed, 15 days' worth of water was lost. Water left: ${plDays(s.f.water.stock)}.`,
+                `Po tygodniu czujniki pokazały spadek poziomu: mały przeciek na łączeniu. Zanim go uszczelniono, ubyło wody na 15 dni. Zapas: ${plDays(s.f.water.stock)}.`),
+              tag: "outage", schedule: -1,
+            };
+          },
+        },
+        successText: { en: "The tank holds.", pl: "Zbiornik szczelny." },
+      },
+    ],
+  },
+  {
+    id: "c04", date: "2031-10-07", type: TYPE.reserve,
+    title: { en: "Night in two days: run the tile plant on batteries?", pl: "Noc za dwa dni: zakład płytek na bateriach?" },
+    text: {
+      en: "The plant that bakes building tiles from local dust is catching up on a delay. If it runs through the night, the batteries drop from 30% to 10%. The batteries are the only power source at night, and emergency power lasts 2 days.",
+      pl: "Zakład, który wypala płytki budowlane z miejscowego pyłu, nadrabia opóźnienie. Jeśli będzie pracował przez noc, baterie rozładują się z 30% do 10%. Baterie to jedyne źródło prądu w nocy, a awaryjne zasilanie wystarczy na 2 doby.",
+    },
+    facts: ["power", "parts"],
+    options: [
+      {
+        id: "A", label: { en: "Run through the night", pl: "Pracuj przez noc" },
+        desc: { en: "The plant catches up; the batteries drop to 10%.", pl: "Zakład nadrabia zaległości, baterie schodzą do 10%." },
+        risk: { L: 2, fn: "power", roll: 0.55 },
+        success: { schedule: 5 },
+        successText: { en: "The batteries held. 11% left in the morning and a full batch of tiles.", pl: "Baterie wytrzymały. Rano zostało 11% i komplet płytek." },
+      },
+      {
+        id: "B", label: { en: "Shut the plant for the night", pl: "Wyłącz zakład na noc" },
+        desc: { en: "The plant idles for 15 days; the batteries stay full.", pl: "Zakład stoi 15 dni, baterie zostają pełne." },
+        effects: {},
+        outcome: { en: "The plant waited out the night. The delay stays.", pl: "Zakład przeczekał noc. Zaległość zostaje." },
+      },
+    ],
+  },
+  {
+    id: "c05", date: "2031-10-28", type: TYPE.now,
+    title: { en: "Water recycling service at the busiest time", pl: "Przegląd odzysku wody w szczycie prac" },
+    text: {
+      en: "The scheduled service of the water recycling system falls in the week the greenhouse is being assembled. It stops recycling for 3 days and ties up a rover and two people.",
+      pl: "Planowy przegląd instalacji odzysku wody wypada w tygodniu montażu szklarni. Zatrzymuje odzysk na 3 dni i zajmuje łazik oraz dwie osoby.",
+    },
+    facts: ["water", "parts"],
+    options: [
+      {
+        id: "A", label: { en: "Service now", pl: "Przegląd teraz" },
+        desc: { en: "Greenhouse assembly slips by a few days.", pl: "Montaż szklarni przesuwa się o kilka dni." },
+        effects: { schedule: -4, stock: { water: -3 } },
+        outcome: { en: "Pre-filters replaced; one was close to clogging.", pl: "Wymieniono filtry wstępne; jeden był bliski zatkania." },
+      },
+      {
+        id: "B", label: { en: "Postpone a month", pl: "Odłóż o miesiąc" },
+        desc: { en: "Greenhouse assembly stays on schedule.", pl: "Montaż szklarni idzie zgodnie z planem." },
+        risk: { L: 2, fn: "water", roll: 0.48 },
+        successText: { en: "The system made it to the November service.", pl: "Instalacja dociągnęła do przeglądu w listopadzie." },
+      },
+    ],
+  },
+  {
+    id: "c06", date: "2031-11-18", type: TYPE.invest,
+    title: { en: "December delivery: one free slot", pl: "Grudniowa dostawa: jedno wolne miejsce" },
+    text: {
+      en: "There's room for one more item on the December flight. Each one would help, but only one can fly.",
+      pl: "W ładowni grudniowego lotu zostało miejsce na jeden ładunek. Każdy się przyda, ale poleci tylko jeden.",
+    },
+    facts: ["spof", "parts"],
+    options: [
+      {
+        id: "A", label: { en: "Second electrolyzer", pl: "Drugi elektrolizer" },
+        desc: { en: "A backup oxygen source. If one electrolyzer breaks, the other keeps making oxygen.", pl: "Zapasowe źródło tlenu. Gdy jeden elektrolizer się zepsuje, drugi dalej robi tlen." },
+        effects: { cargo: "electrolyzer" },
+        outcome: { en: "Electrolyzer added to the cargo. Launch in December.", pl: "Elektrolizer dopisany do ładunku. Start w grudniu." },
+      },
+      {
+        id: "B", label: { en: "Second battery bank", pl: "Drugi zestaw baterii" },
+        desc: { en: "If one bank fails, the other keeps the night power on. Plus twice the power reserve.", pl: "Gdy jeden zestaw padnie, drugi utrzyma prąd w nocy. Do tego dwa razy większy zapas prądu." },
+        effects: { cargo: "battery" },
+        outcome: { en: "Batteries added to the cargo. Launch in December.", pl: "Baterie dopisane do ładunku. Start w grudniu." },
+      },
+      {
+        id: "C", label: { en: "Greenhouse Mk2 kit", pl: "Zestaw szklarni Mk2" },
+        desc: { en: "Speeds up the first harvest; the schedule gains about 8 days.", pl: "Przyspiesza pierwszy plon; harmonogram zyska ok. 8 dni." },
+        effects: { cargo: "greenhouse" },
+        outcome: { en: "Greenhouse added to the cargo. Launch in December.", pl: "Szklarnia dopisana do ładunku. Start w grudniu." },
+      },
+      {
+        id: "D", label: { en: "Three spare part kits", pl: "Trzy zestawy części" },
+        desc: { en: "Faster repairs for the rest of the year.", pl: "Szybsze naprawy przez resztę roku." },
+        effects: { cargo: "parts" },
+        outcome: { en: "Spare parts added to the cargo. Launch in December.", pl: "Części dopisane do ładunku. Start w grudniu." },
+      },
+    ],
+  },
+  {
+    id: "c07", date: "2031-12-08", type: TYPE.go,
+    title: { en: "Launch vs. a solar storm forecast", pl: "Start rakiety a prognoza burzy słonecznej" },
+    text: (s) => {
+      const cargo = s.cargo ? tx(CARGO[s.cargo].name) : tr("cargo", "ładunek");
+      return tr(`The rocket with the December delivery (${cargo} plus 1 spare part kit) is on the pad. The forecast says a solar storm may hit 2–4 days after launch. The next launch opportunity is in 11 days.`,
+        `Rakieta z grudniową dostawą (${cargo} i 1 zestaw części) stoi na stanowisku. Prognoza mówi, że w ciągu 2–4 dni po starcie może przyjść burza słoneczna. Następna okazja do startu będzie za 11 dni.`);
+    },
+    facts: ["parts", "delivery"],
+    options: [
+      {
+        id: "A", label: { en: "Launch now", pl: "Startuj teraz" },
+        desc: { en: "Landing on Dec 14.", pl: "Lądowanie 14 grudnia." },
+        risk: {
+          L: 2, roll: 0.55,
+          severity: (s) => (s.parts === 0 || s.cargo === "electrolyzer" || s.cargo === "battery" ? 2 : 1),
+          describe: (s) => tr(`If the storm disrupts the rocket's electronics, the delivery will be about 3 weeks late${s.parts === 0 ? ", and the base has no spare parts" : ""}.`,
+            `Jeśli burza zakłóci elektronikę rakiety, dostawa spóźni się o ok. 3 tygodnie${s.parts === 0 ? ", a w bazie nie ma części" : ""}.`),
+          incident: (s) => {
+            const d = s.deliveries.find((x) => x.id === "d2");
+            d.date += 20 * DAY;
+            return {
+              text: tr(`The storm disrupted the rocket's electronics. A course correction moves the landing to ${fmt(d.date)}.`,
+                `Burza zakłóciła elektronikę rakiety. Poprawka kursu przesuwa lądowanie na ${fmt(d.date)}.`),
+              tag: "outage", schedule: -3,
+            };
+          },
+        },
+        successText: { en: "A smooth flight. Landed on schedule, Dec 14.", pl: "Lot bez zakłóceń. Lądowanie zgodnie z planem, 14 grudnia." },
+      },
+      {
+        id: "B", label: { en: "Wait for the next opportunity", pl: "Poczekaj na następną okazję" },
+        desc: { en: "Launch on Dec 19, landing on Dec 25.", pl: "Start 19 grudnia, lądowanie 25 grudnia." },
+        effects: { schedule: -4, d2: D("2031-12-25") },
+        outcome: { en: "Launch moved. The storm passed on Dec 11, and the new date was calm.", pl: "Start przesunięty. Burza przeszła 11 grudnia, a nowy termin był spokojny." },
+      },
+    ],
+  },
+  {
+    id: "c08", date: "2032-01-20", type: TYPE.check,
+    title: { en: "Greenhouse: less light in section 2", pl: "Szklarnia: mniej światła w sekcji 2" },
+    text: {
+      en: "Section 2 of the greenhouse is giving 30% less light. The usual cause is an LED panel, but it could also be the section's power supply. Harvest is 5 weeks away.",
+      pl: "Sekcja 2 szklarni daje 30% mniej światła. Najczęstszą przyczyną jest panel LED, ale może to być też zasilacz sekcji. Do zbiorów zostało 5 tygodni.",
+    },
+    facts: ["food", "parts"],
+    options: [
+      {
+        id: "A", label: { en: "Diagnose first", pl: "Najpierw diagnoza" },
+        desc: { en: "One day of measurements, then fix the right thing.", pl: "Jeden dzień pomiarów, potem naprawa właściwej rzeczy." },
+        effects: { schedule: -1 },
+        outcome: { en: "It was the section's power supply. Replaced from storage without using a spare part kit.", pl: "Winny był zasilacz sekcji. Wymieniony z magazynu, bez zużycia części." },
+      },
+      {
+        id: "B", label: { en: "Replace the panel now", pl: "Wymień panel od razu" },
+        desc: { en: "The most common cause, no waiting.", pl: "Najczęstsza przyczyna, zero czekania." },
+        effects: { schedule: -2, parts: -1 },
+        requires: NO_PARTS,
+        outcome: { en: "The new panel changed nothing: it was the power supply. The diagnosis was needed anyway, and a spare part kit went to waste.", pl: "Nowy panel nic nie zmienił: winny był zasilacz. Diagnoza i tak była potrzebna, a jeden zestaw części poszedł na marne." },
+      },
+      {
+        id: "C", label: { en: "Leave it until harvest", pl: "Zostaw do zbiorów" },
+        desc: { en: "The greenhouse keeps going with 70% light in section 2.", pl: "Szklarnia pracuje dalej na 70% światła w sekcji 2." },
+        risk: { L: 1, fn: "food", roll: 0.9 },
+        success: { stock: { food: -8 } },
+        successText: { en: "The harvest was about 8% smaller. Power supply replaced after the harvest.", pl: "Plon niższy o ok. 8%. Zasilacz wymieniony po zbiorach." },
+      },
+    ],
+  },
+  {
+    id: "c09", date: "2032-03-09", type: TYPE.now,
+    title: { en: "Electrolyzer at 4,000 hours", pl: "Elektrolizer po 4000 godzinach" },
+    text: (s) => {
+      const two = s.f.o2.realizers >= 2;
+      return tr(`The manufacturer recommends a cell inspection after 4,000 hours of operation. The inspection stops oxygen production for 5 days. If a cell cracks, regular spare parts won't help: a new cell only comes with the next delivery.${two ? " A second electrolyzer has been running since December." : ""}`,
+        `Producent zaleca przegląd ogniw po 4000 godzinach pracy. Przegląd zatrzymuje produkcję tlenu na 5 dni. Jeśli ogniwo pęknie, zwykłe części zamienne nie wystarczą: nowe ogniwo przyleci dopiero z najbliższą dostawą.${two ? " Od grudnia pracuje drugi elektrolizer." : ""}`);
+    },
+    facts: ["o2", "delivery"],
+    options: [
+      {
+        id: "A", label: { en: "Inspect now", pl: "Przegląd teraz" },
+        desc: { en: "5 days of downtime and two people on the job.", pl: "5 dni przerwy i dwie osoby przy pracy." },
+        effects: { schedule: -5, stockIfSingle: { o2: -3 } },
+        outcome: { en: "Two cells had cracks. Replaced just in time.", pl: "Na dwóch ogniwach znaleziono pęknięcia. Wymienione w porę." },
+      },
+      {
+        id: "B", label: { en: "Postpone until summer", pl: "Odłóż do lata" },
+        desc: { en: "Inspection after the annual report, no downtime now.", pl: "Przegląd po raporcie rocznym, bez przestoju teraz." },
+        risk: {
+          L: 3, fn: "o2", roll: 0.30,
+          restore: (s) => daysToNext(s) + 2,
+          restoreNote: { en: "a new cell has to come from Earth", pl: "nowe ogniwo trzeba sprowadzić z Ziemi" },
+          incident: (s) => {
+            const r = loseRealizer(s, "o2", { restore: (x) => daysToNext(x) + 2 });
+            const covered = r.tag === "covered";
+            r.text = tr(`On Mar 23 an electrolyzer cell cracked. ${covered ? "The second electrolyzer took over oxygen production, and a new cell arrives in April." : r.text}`,
+              `23 marca pękło ogniwo elektrolizera. ${covered ? "Drugi elektrolizer przejął produkcję tlenu, a nowe ogniwo przyleci w kwietniu." : r.text}`);
+            return r;
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: "c10", date: "2032-05-18", type: TYPE.cont,
+    title: { en: "Ice-to-water system: odd sensor reading", pl: "Instalacja wody z lodu: dziwny odczyt czujnika" },
+    text: {
+      en: "The start-up checklist for the first ice-to-water system stopped at one item: a pressure sensor reads at the edge of the normal range. Most likely the sensor itself is faulty. Checking it takes 3 days.",
+      pl: "Lista kontrolna przed uruchomieniem pierwszej instalacji wody z lodu zatrzymała się na jednym punkcie: czujnik ciśnienia pokazuje wartość na granicy normy. Najpewniej zepsuł się sam czujnik. Sprawdzenie go zajmie 3 dni.",
+    },
+    facts: ["water", "parts"],
+    options: [
+      {
+        id: "A", label: { en: "Start despite the warning", pl: "Uruchom mimo ostrzeżenia" },
+        desc: { en: "You sign off on starting with one checklist item not passed.", pl: "Podpisujesz zgodę na start bez zaliczenia jednego punktu listy." },
+        effects: { realizers: { water: 1 } },
+        risk: {
+          L: 2, fn: "water", single: true, roll: 0.27,
+          describe: (s) => tr(`If it isn't the sensor, the high pressure could damage a pipe shared with water recycling. Both systems would stop: water lasts ${plDays(s.f.water.stock)}, and the repair takes about ${plDays(restoreDays(s, "water"))} (${partsNote(s)}).`,
+            `Jeśli to nie wina czujnika, za wysokie ciśnienie może uszkodzić rurę wspólną z odzyskiem wody. Stanęłyby obie instalacje: wody starczy na ${plDays(s.f.water.stock)}, a naprawa potrwa ok. ${plDays(restoreDays(s, "water"))} (${partsNote(s)}).`),
+          incident: (s) => {
+            const r = loseRealizer(s, "water", { single: true });
+            r.text = tr(`It wasn't the sensor. The high pressure damaged the pipe shared by the new system and water recycling, so both stopped. Having two systems didn't help, because one pipe connected them. ${r.text}`,
+              `To nie był czujnik. Za wysokie ciśnienie uszkodziło rurę wspólną dla nowej instalacji i odzysku wody, więc stanęły obie. Dwie instalacje nie pomogły, bo łączyła je jedna rura. ${r.text}`);
+            return r;
+          },
+        },
+        success: { schedule: 6 },
+        successText: { en: "The system is running. First local water!", pl: "Instalacja ruszyła. Pierwsza lokalna woda!" },
+      },
+      {
+        id: "B", label: { en: "Hold and check the sensor", pl: "Wstrzymaj i sprawdź czujnik" },
+        desc: { en: "Start-up 3 days later.", pl: "Uruchomienie 3 dni później." },
+        effects: { schedule: -3, realizers: { water: 1 } },
+        outcome: { en: "The check showed the sensor was fine and the pressure really was too high. Valve replaced before start-up. First local water, no surprises.", pl: "Sprawdzenie pokazało, że czujnik działał, a ciśnienie naprawdę było za wysokie. Zawór wymieniony przed uruchomieniem. Pierwsza lokalna woda, bez niespodzianek." },
+      },
+    ],
+  },
+];
+CARDS.forEach((c) => { c.t = D(c.date); });
+
+// ---------- stan sesji ----------
+let state, run, cardIndex, selected, cardShownAt, busy;
+
+// crypto.randomUUID istnieje tylko w bezpiecznym kontekście; plik otwarty z dysku czy podgląd `data:` go nie mają.
+function uuid4() {
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
+
+function newRun(name) {
+  return {
+    id: uuid4(),
+    version: VERSION, tester: name || null,
+    started_at: new Date().toISOString(), finished_at: null,
+    params: { show_price: SHOW_PRICE, free_low: FREE_LOW, limit: LIMIT, lang: LANG },
+    choices: [], report: null, feedback: null,
+  };
+}
+
+// ---------- efekty i upływ czasu ----------
+function applyEffects(s, e) {
+  if (!e) return;
+  if (e.schedule) s.schedule += e.schedule;
+  if (e.parts) s.parts = Math.max(0, s.parts + e.parts);
+  if (e.cap) for (const k in e.cap) s.f[k].cap += e.cap[k];
+  if (e.stock) for (const k in e.stock) s.f[k].stock = clampStock(s, k, s.f[k].stock + e.stock[k]);
+  if (e.stockIfSingle) for (const k in e.stockIfSingle) if (s.f[k].realizers < 2) s.f[k].stock = clampStock(s, k, s.f[k].stock + e.stockIfSingle[k]);
+  if (e.realizers) for (const k in e.realizers) s.f[k].realizers += e.realizers[k];
+  if (e.cargo) { s.cargo = e.cargo; s.deliveries.find((d) => d.id === "d2").cargo = e.cargo; }
+  if (e.d2) s.deliveries.find((d) => d.id === "d2").date = e.d2;
+}
+const clampStock = (s, k, v) => Math.max(0, Math.min(s.f[k].cap, Math.round(v * 10) / 10));
+
+function advanceTo(s, target) {
+  const events = [];
+  while (s.date < target) {
+    s.date += DAY;
+    for (const d of s.deliveries) {
+      if (d.done || d.date > s.date) continue;
+      d.done = true;
+      s.parts += d.parts;
+      let extra = "";
+      if (d.cargo === "electrolyzer") { s.f.o2.realizers += 1; extra = tr(" Second electrolyzer online.", " Drugi elektrolizer uruchomiony."); }
+      if (d.cargo === "battery") { s.f.power.realizers += 1; s.f.power.cap += 2; s.f.power.stock += 2; extra = tr(" Second battery bank connected.", " Drugi zestaw baterii podłączony."); }
+      if (d.cargo === "greenhouse") { s.schedule += 8; s.f.food.stock = clampStock(s, "food", s.f.food.stock + 20); extra = tr(" Greenhouse Mk2 being assembled (schedule +8 days).", " Szklarnia Mk2 w montażu (harmonogram +8 dni)."); }
+      if (d.cargo === "parts") { s.parts += 3; extra = tr(" Three extra spare part kits.", " Trzy dodatkowe zestawy części."); }
+      events.push({ date: s.date, kind: "delivery", text: `${tx(d.label)}: ${d.parts} ${kits(d.parts)}.${extra}` });
+    }
+    s.pending = s.pending.filter((p) => {
+      if (p.date > s.date) return true;
+      if (p.kind === "rover_back") { s.rovers += 1; events.push({ date: s.date, kind: "good", text: tr("The rover made it back to the base after the night.", "Łazik wrócił do bazy po nocy.") }); }
+      return false;
+    });
+    for (const k in s.f) {
+      const F = s.f[k];
+      if (F.realizers > 0 && FUNCS[k].regen > 0 && F.stock < F.cap) F.stock = clampStock(s, k, F.stock + FUNCS[k].regen);
+    }
+  }
+  return events;
+}
+
+const spofCount = (s) => CRITICAL.filter((k) => s.f[k].realizers < 2).length;
+
+// ---------- render: nagłówek, oś, panel ----------
+const $ = (id) => document.getElementById(id);
+const pct = (t) => `${((t - T_START) / (T_END - T_START)) * 100}%`;
+
+function trustInfo(s) {
+  const r = 1 - s.spent / LIMIT;
+  if (s.spent > LIMIT) return { label: tr("exceeded · review board", "przekroczony · komisja"), w: 100, color: "var(--high)" };
+  if (r > 0.66) return { label: tr("large", "duży"), w: r * 100, color: "var(--ok)" };
+  if (r > 0.33) return { label: tr("medium", "średni"), w: r * 100, color: "var(--med)" };
+  if (r > 0) return { label: tr("small", "mały"), w: r * 100, color: "var(--high)" };
+  return { label: tr("used up", "wyczerpany"), w: 0, color: "var(--high)" };
+}
+
+function renderTop() {
+  const s = state;
+  $("statDate").textContent = fmt(s.date);
+  $("statReport").textContent = plDays(daysBetween(s.date, T_END));
+  const sch = $("statSchedule");
+  const n = Math.abs(s.schedule);
+  sch.textContent = s.schedule === 0 ? tr("on schedule", "zgodnie z planem")
+    : s.schedule > 0 ? tr(`${plDays(n)} ahead`, `${n} dni przed planem`)
+    : tr(`${plDays(n)} behind`, `${n} dni opóźnienia`);
+  sch.className = s.schedule > 0 ? "pos" : s.schedule < 0 ? "neg" : "";
+  const t = trustInfo(s);
+  $("statTrustLabel").textContent = t.label + (DEBUG ? ` (${s.spent}/${LIMIT})` : "");
+  $("statTrustBar").style.width = `${t.w}%`;
+  $("statTrustBar").style.background = t.color;
+}
+
+function buildTrack() {
+  const tr_ = $("track");
+  tr_.innerHTML = "";
+  for (let t = FIRST_NIGHT - SYNODIC * DAY; t < T_END; t += SYNODIC * DAY) {
+    const a = Math.max(t, T_START), b = Math.min(t + NIGHT_LEN * DAY, T_END);
+    if (b <= a) continue;
+    tr_.insertAdjacentHTML("beforeend", `<div class="night" style="left:${pct(a)};width:calc(${pct(b)} - ${pct(a)})"></div>`);
+  }
+  tr_.insertAdjacentHTML("beforeend", `<div class="rail"></div><div class="fill" id="fill"></div>`);
+  for (let y = 2031, m = 7; y < 2032 || m <= 7; m++) {
+    if (m > 12) { m = 1; y++; }
+    const t = Date.UTC(y, m - 1, 1);
+    if (t >= T_START && t <= T_END) tr_.insertAdjacentHTML("beforeend", `<div class="tick" style="left:${pct(t)}"></div>`);
+    const mid = t + 15 * DAY;
+    if (mid >= T_START && mid <= T_END) tr_.insertAdjacentHTML("beforeend", `<div class="month" style="left:${pct(mid)}">${MON[LANG][m - 1]}${m === 1 ? " '32" : ""}</div>`);
+    if (y === 2032 && m === 7) break;
+  }
+  tr_.insertAdjacentHTML("beforeend", `<div id="dls"></div>`);
+  CARDS.forEach((c, i) => tr_.insertAdjacentHTML("beforeend", `<div class="mk" id="mk${i}" style="left:${pct(c.t)}" title="${fmt(c.t)}"></div>`));
+  tr_.insertAdjacentHTML("beforeend", `<div class="mk" id="mkEnd" style="left:${pct(T_END)};border-color:var(--accent)" title="${tr("Annual report", "Raport roczny")}"></div>`);
+  tr_.insertAdjacentHTML("beforeend", `<div class="now" id="now"><b id="nowLabel"></b></div>`);
+}
+
+function renderTrack() {
+  $("dls").innerHTML = state.deliveries.map((d) =>
+    `<div class="dl" style="left:${pct(d.date)}" title="${tx(d.label)} · ${fmt(d.date)}">▼</div>`).join("");
+  $("fill").style.width = pct(state.date);
+  $("now").style.left = pct(state.date);
+  $("nowLabel").textContent = fmtShort(state.date);
+  CARDS.forEach((c, i) => {
+    const el = $(`mk${i}`);
+    el.className = "mk";
+    const ch = run.choices.find((x) => x.card === c.id);
+    if (ch) {
+      el.classList.add("done", ch.level === "none" && !ch.risky ? "safe" : `lvl-${ch.level}`);
+      if (ch.incident) el.classList.add("incident");
+      el.title = `${fmt(c.t)} · ${tx(c.title)} · ${ch.option_label}`;
+    } else if (i === cardIndex) el.classList.add("current");
+  });
+}
+
+// Odporność 1–5: 5 = druga ścieżka, niżej = ile razy zapas pokrywa czas przywrócenia.
+function resilience(s, k) {
+  const F = s.f[k];
+  if (F.realizers >= 2) return 5;
+  const ratio = F.stock / restoreDays(s, k);
+  return ratio >= 4 ? 4 : ratio >= 2 ? 3 : ratio >= 1 ? 2 : 1;
+}
+
+function renderBase(flashKeys = []) {
+  const s = state;
+  const rows = Object.keys(FUNCS).map((k) => {
+    const F = s.f[k], M = FUNCS[k], dev = tx(M.realizer), res = tx(M.gen);
+    const lvl = resilience(s, k);
+    const tip = tr(`${F.realizers}× ${dev} · ${res} lasts ${plDays(F.stock)}`, `${F.realizers}× ${dev} · ${res} starczy na ${plDays(F.stock)}`) +
+      (F.realizers >= 2
+        ? tr(" · if one unit breaks, the other takes over", " · gdy jedno urządzenie się zepsuje, drugie przejmie pracę")
+        : tr(` · repair takes about ${plDays(restoreDays(s, k))}`, ` · naprawa trwa ok. ${plDays(restoreDays(s, k))}`));
+    const segs = [1, 2, 3, 4, 5].map((i) => `<i${i <= lvl ? ` class="on l${lvl}"` : ""}></i>`).join("");
+    return `<div class="fn${flashKeys.includes(k) ? " flash" : ""}" title="${tip}">
+      <span class="fn-name">${tx(M.name)}</span><span class="segs">${segs}</span>
+    </div>`;
+  }).join("");
+  const nd = nextDelivery(s);
+  const ndText = nd ? tr(`in ${plDays(daysBetween(s.date, nd.date))}`, `za ${plDays(daysBetween(s.date, nd.date))}`) : "—";
+  $("basePanel").innerHTML = `
+    <h3>${tr("Base status", "Stan bazy")}</h3>
+    <p class="hint">${tr("More green bars = safer. Hover over a row for details.", "Więcej zielonych kresek = bezpieczniej. Najedź na wiersz, żeby zobaczyć szczegóły.")}</p>
+    ${rows}
+    <div class="support">
+      <span>${tr("Rovers", "Łaziki")} <b>${s.rovers}</b></span>
+      <span>${tr("Spare parts", "Części")} <b>${s.parts}</b></span>
+      <span>${tr("Delivery", "Dostawa")} <b>${ndText}</b></span>
+    </div>`;
+}
+
+function addLog(events) {
+  const ol = $("logList");
+  for (const e of events) {
+    ol.insertAdjacentHTML("afterbegin", `<li class="k-${e.kind}"><time>${fmt(e.date)}</time><span>${e.text}</span></li>`);
+  }
+}
+
+// ---------- render: karta ----------
+function factHtml(s, key) {
+  const F = s.f;
+  switch (key) {
+    case "o2": return tr(`Oxygen for <b>${plDays(F.o2.stock)}</b> · electrolyzers: <b>${F.o2.realizers}</b>`, `Tlenu na <b>${plDays(F.o2.stock)}</b> · elektrolizery: <b>${F.o2.realizers}</b>`);
+    case "water": return tr(`Water for <b>${plDays(F.water.stock)}</b> · systems: <b>${F.water.realizers}</b>`, `Wody na <b>${plDays(F.water.stock)}</b> · instalacje: <b>${F.water.realizers}</b>`);
+    case "power": return tr(`Battery banks: <b>${F.power.realizers}</b> · emergency power for <b>${plDays(F.power.stock)}</b>`, `Baterie: <b>${F.power.realizers}</b> · awaryjny prąd na <b>${plDays(F.power.stock)}</b>`);
+    case "food": return tr(`Food for <b>${plDays(F.food.stock)}</b>`, `Jedzenia na <b>${plDays(F.food.stock)}</b>`);
+    case "parts": return tr(`Spare parts: <b>${s.parts}</b>`, `Części: <b>${s.parts}</b>`);
+    case "rovers": return tr(`Rovers: <b>${s.rovers}</b>`, `Łaziki: <b>${s.rovers}</b>`);
+    case "delivery": {
+      const n = nextDelivery(s);
+      if (!n) return tr("Delivery: none planned", "Dostawa: brak w planie");
+      const left = plDays(daysBetween(s.date, n.date));
+      return tr(`Delivery: <b>${fmtShort(n.date)}</b> (in ${left})`, `Dostawa: <b>${fmtShort(n.date)}</b> (za ${left})`);
+    }
+    case "night": return tr("Sunset: <b>in 40 h</b>", "Zachód Słońca: <b>za 40 h</b>");
+    case "spof": return tr(`Things without a backup: <b>${spofCount(s)}</b>`, `Rzeczy bez zapasowego urządzenia: <b>${spofCount(s)}</b>`);
+  }
+  return "";
+}
+
+function stockChip(k, days) {
+  return tr(`${tx(FUNCS[k].gen)} −${plDays(days)}`, `zapas ${tx(FUNCS[k].gen)} −${plDays(days)}`);
+}
+
+function effectChips(s, opt) {
+  const e = opt.effects || {};
+  const out = [];
+  if (e.schedule) out.push([e.schedule > 0 ? "pos" : "neg", tr(`schedule ${sDays(e.schedule)}`, `${sDays(e.schedule)} harmonogramu`)]);
+  if (opt.success?.schedule) out.push(["pos", tr(`${sDays(opt.success.schedule)} if it works`, `${sDays(opt.success.schedule)}, jeśli się uda`)]);
+  if (e.parts) out.push(["neg", `${signed(e.parts)} ${kits(e.parts)}`]);
+  if (e.stock) for (const k in e.stock) if (e.stock[k] < 0) out.push(["neg", stockChip(k, -e.stock[k])]);
+  if (e.stockIfSingle) for (const k in e.stockIfSingle) if (s.f[k].realizers < 2) out.push(["neg", stockChip(k, -e.stockIfSingle[k])]);
+  if (!e.schedule && !opt.success && !opt.risk && !e.cargo) out.push(["", tr("no schedule change", "bez zmian w harmonogramie")]);
+  if (opt.risk && s.commission) {
+    const lvl = level(opt.risk.L, severity(s, opt.risk));
+    if (lvl === "med" || lvl === "high") out.push(["neg", tr("review board: −2 days", "komisja: −2 dni")]);
+  }
+  return out.map(([c, t]) => `<span class="chip ${c}">${t}</span>`).join("");
+}
+
+function cardHead(c) {
+  return `<div class="card-head">
+      <span class="card-date">${fmt(c.t)}</span>
+      <span class="card-type">${tx(c.type)}</span>
+      <span class="card-count">${cardIndex + 1} / ${CARDS.length}</span>
+    </div>
+    <h2>${tx(c.title)}</h2>`;
+}
+
+function renderCard() {
+  const s = state, c = CARDS[cardIndex];
+  selected = null;
+  cardShownAt = performance.now();
+  const opts = c.options.map((o) => {
+    const blocked = o.requires ? o.requires(s) : null;
+    let riskHtml = "", badge = "";
+    if (o.risk) {
+      const S = severity(s, o.risk), lvl = level(o.risk.L, S);
+      if (SHOW_PRICE) {
+        badge = `<span class="risk ${lvl}">${tx(LEVEL_LABEL[lvl])}</span>`;
+        riskHtml = `<div class="opt-risk">${describeRisk(s, o.risk)}</div>`;
+      }
+      if (DEBUG) riskHtml += `<div class="debug">L${o.risk.L} × S${S} = ${o.risk.L * S} → ${points(lvl)} pkt · szansa ${Math.round(chance(o.risk.L) * 100)}% · rzut ${o.risk.roll}</div>`;
+    } else if (SHOW_PRICE && c.options.some((x) => x.risk)) {
+      badge = `<span class="risk none">${tr("safe", "bezpiecznie")}</span>`;
+    }
+    return `<button class="opt" data-id="${o.id}" aria-pressed="false" ${blocked ? "disabled" : ""}>
+      <div class="opt-title">${tx(o.label)} ${badge}${blocked ? `<span class="chip neg">${blocked}</span>` : ""}</div>
+      <div class="opt-desc">${tx(o.desc)}</div>
+      ${riskHtml}
+      <div class="chips">${effectChips(s, o)}</div>
+    </button>`;
+  }).join("");
+  $("cardArea").innerHTML = `
+    <article class="card">
+      ${cardHead(c)}
+      <p class="sit">${tx(c.text, s)}</p>
+      <div class="facts">${c.facts.map((f) => `<span class="fact">${factHtml(s, f)}</span>`).join("")}</div>
+      <div class="options">${opts}</div>
+      <div class="sign">
+        <input id="why" type="text" maxlength="200" placeholder="${tr("Why? (optional, one sentence)", "Dlaczego? (opcjonalnie, jedno zdanie)")}">
+        <div class="row-end"><button id="signBtn" class="btn primary" disabled>${tr("Sign the decision", "Podpisuję decyzję")}</button></div>
+      </div>
+    </article>`;
+  document.querySelectorAll(".opt").forEach((b) => b.addEventListener("click", () => {
+    if (b.disabled) return;
+    selected = b.dataset.id;
+    document.querySelectorAll(".opt").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    $("signBtn").disabled = false;
+  }));
+  $("signBtn").addEventListener("click", () => selected && decide(c, c.options.find((o) => o.id === selected)));
+  renderTrack();
+}
+
+// ---------- decyzja ----------
+function decide(card, opt) {
+  if (busy) return;
+  const s = state;
+  const why = $("why").value.trim();
+  const before = structuredClone(s);
+  let S = 0, lvl = "none", pts = 0, incident = false, tag = null;
+  const texts = [];
+
+  const offered = card.options.map((o) => ({ option: o.id, level: o.risk ? level(o.risk.L, severity(s, o.risk)) : "safe" }));
+  if (opt.risk) {
+    S = severity(s, opt.risk);
+    lvl = level(opt.risk.L, S);
+    pts = points(lvl);
+  }
+  applyEffects(s, opt.effects);
+
+  if (opt.risk) {
+    incident = opt.risk.roll < chance(opt.risk.L);
+    if (incident) {
+      const r = opt.risk.incident ? opt.risk.incident(s) : loseRealizer(s, opt.risk.fn, opt.risk);
+      s.schedule += r.schedule || 0;
+      tag = r.tag;
+      texts.push(r.text);
+    } else {
+      applyEffects(s, opt.success);
+      tag = "win";
+      texts.push(tx(opt.successText) || tr("It worked.", "Udało się."));
+    }
+    if (s.commission && (lvl === "med" || lvl === "high")) s.schedule -= 2;
+    s.spent += pts;
+  } else {
+    texts.push(tx(opt.outcome, s));
+  }
+
+  let commissionNow = false;
+  if (!s.commission && s.spent > LIMIT) { s.commission = true; commissionNow = true; }
+
+  const label = tx(opt.label);
+  const choice = {
+    card: card.id, option: opt.id, option_label: label, date: card.date,
+    risky: !!opt.risk, L: opt.risk?.L ?? 0, S, level: lvl, points: pts,
+    incident, outcome_tag: tag, why: why || null, offered,
+    ms_to_decide: Math.round(performance.now() - cardShownAt),
+    schedule_after: s.schedule, spent_after: s.spent,
+  };
+  run.choices.push(choice);
+  card._before = before;
+
+  const deltas = diffChips(before, s);
+  const tagHtml = {
+    win: `<span class="tag win">${lvl === "none" ? tr("it worked", "udało się") : tr("bet won", "zakład wygrany")}</span>`,
+    crisis: `<span class="tag bad">${tr("crisis", "kryzys")}</span>`,
+    close: `<span class="tag close">${tr("close call", "o włos")}</span>`,
+    outage: `<span class="tag bad">${tr("incident", "incydent")}</span>`,
+    covered: `<span class="tag covered">${tr("the backup worked", "zapasowe urządzenie zadziałało")}</span>`,
+  }[tag] || "";
+  const nextLabel = cardIndex + 1 < CARDS.length
+    ? tr(`Continue · ${plDays(daysBetween(s.date, CARDS[cardIndex + 1].t))} pass`, `Dalej · mija ${plDays(daysBetween(s.date, CARDS[cardIndex + 1].t))}`)
+    : tr("To the annual report", "Do raportu rocznego");
+
+  $("cardArea").querySelector(".card").innerHTML = `
+    ${cardHead(card)}
+    <div class="outcome">
+      <div class="chosen">${tr("Decision", "Decyzja")}: <b>${label}</b>${opt.risk && SHOW_PRICE ? ` · ${tx(LEVEL_LABEL[lvl])}` : ""}${why ? ` · ${q(escapeHtml(why))}` : ""}</div>
+      ${tagHtml}
+      ${texts.filter(Boolean).map((t) => `<p>${t}</p>`).join("")}
+      ${commissionNow ? `<div class="banner">${tr("<b>The agency calls a review board.</b> You've used up this year's trust reserve. For the rest of the year, every medium or high risk decision needs an extra review (−2 days of schedule).", "<b>Agencja zwołuje komisję przeglądową.</b> Przekroczyłeś roczny zapas zaufania. Do końca roku każda decyzja o ryzyku średnim lub wysokim wymaga dodatkowego przeglądu (−2 dni harmonogramu).")}</div>` : ""}
+      <div class="chips">${deltas}</div>
+    </div>
+    <div class="row-end" style="margin-top:16px">
+      <button id="nextBtn" class="btn primary">${nextLabel}</button>
+    </div>`;
+  $("nextBtn").addEventListener("click", next);
+  $("nextBtn").focus();
+  renderTop();
+  renderBase(Object.keys(FUNCS).filter((k) => before.f[k].stock !== s.f[k].stock || before.f[k].realizers !== s.f[k].realizers));
+  renderTrack();
+}
+
+function diffChips(a, b) {
+  const out = [];
+  const ds = b.schedule - a.schedule;
+  if (ds) out.push([ds > 0 ? "pos" : "neg", tr(`schedule ${sDays(ds)}`, `harmonogram ${sDays(ds)}`)]);
+  if (b.parts !== a.parts) out.push([b.parts > a.parts ? "pos" : "neg", tr(`spare parts ${signed(b.parts - a.parts)}`, `części ${signed(b.parts - a.parts)}`)]);
+  if (b.rovers !== a.rovers) out.push([b.rovers > a.rovers ? "pos" : "neg", tr(`rovers ${signed(b.rovers - a.rovers)}`, `łaziki ${signed(b.rovers - a.rovers)}`)]);
+  for (const k in FUNCS) {
+    const d = Math.round((b.f[k].stock - a.f[k].stock) * 10) / 10;
+    const res = tx(FUNCS[k].gen);
+    if (d) out.push([d > 0 ? "pos" : "neg", tr(`${res} ${sDays(Math.round(d))}`, `zapas ${res} ${sDays(Math.round(d))}`)]);
+    const r = b.f[k].realizers - a.f[k].realizers;
+    if (r) out.push([r > 0 ? "pos" : "neg", `${tx(FUNCS[k].realizer)} ${signed(r)}`]);
+  }
+  const t = trustInfo(b);
+  if (b.spent !== a.spent) out.push(["neg", tr(`trust reserve: ${t.label}`, `zapas zaufania: ${t.label}`)]);
+  if (a.cargo !== b.cargo && b.cargo) out.push(["pos", tr(`in the cargo: ${tx(CARGO[b.cargo].name)}`, `w ładunku: ${tx(CARGO[b.cargo].name)}`)]);
+  return out.map(([c, x]) => `<span class="chip ${c}">${x}</span>`).join("");
+}
+
+const escapeHtml = (t) => t.replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+
+// ---------- przejście czasu ----------
+function next() {
+  if (busy) return;
+  busy = true;
+  const target = cardIndex + 1 < CARDS.length ? CARDS[cardIndex + 1].t : T_END;
+  const from = state.date;
+  const events = advanceTo(state, target);
+  const n = plDays(daysBetween(from, target));
+  $("cardArea").innerHTML = `<div class="travel">${tr(`${n} pass…`, `mija ${n}…`)}</div>`;
+  cardIndex += 1;
+  renderTrack();
+  animateDate(from, target, () => {
+    addLog(events);
+    renderTop();
+    renderBase(events.length ? Object.keys(FUNCS) : []);
+    busy = false;
+    if (cardIndex < CARDS.length) renderCard();
+    else finish();
+  });
+}
+
+function animateDate(from, to, done) {
+  const t0 = performance.now(), dur = 1100;
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / dur);
+    const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    $("statDate").textContent = fmt(from + Math.round((to - from) * e / DAY) * DAY);
+    if (k < 1) requestAnimationFrame(step); else done();
+  };
+  requestAnimationFrame(step);
+}
+
+// ---------- raport ----------
+function counterfactuals() {
+  const out = [];
+  for (const ch of run.choices) {
+    const card = CARDS.find((c) => c.id === ch.card);
+    if (ch.risky) continue;
+    const alt = card.options.find((o) => o.risk && o.risk.roll < chance(o.risk.L));
+    if (!alt) continue;
+    const s = structuredClone(card._before);
+    s.date = card.t;
+    applyEffects(s, alt.effects);
+    const r = alt.risk.incident ? alt.risk.incident(s) : loseRealizer(s, alt.risk.fn, alt.risk);
+    out.push({ card, chosen: ch.option_label, alt: tx(alt.label), text: r.text, tag: r.tag });
+  }
+  return out;
+}
+
+function trustVerdict(s) {
+  const u = s.spent / LIMIT;
+  if (s.crises > 0) return { key: "down", label: tr("Trust falls", "Zaufanie spada"), effects: [tr("Risk limit next year: −40%", "Limit ryzyka na kolejny rok: −40%"), tr("Mandatory reviews before launches", "Obowiązkowe przeglądy przed startami"), tr("Experimental tech: on hold", "Technologie eksperymentalne: wstrzymane"), tr("Budget: −10%", "Budżet: −10%")] };
+  if (u > 1) return { key: "commission", label: tr("Review board", "Komisja przeglądowa"), effects: [tr("Risk limit next year: −25%", "Limit ryzyka na kolejny rok: −25%"), tr("No launches in bad windows", "Zakaz startów w złych oknach"), tr("Experimental tech: no", "Technologie eksperymentalne: nie"), tr("Budget: −5%", "Budżet: −5%")] };
+  if (u <= 0.4) return { key: "up2", label: tr("Trust grows strongly", "Zaufanie wyraźnie rośnie"), effects: [tr("Risk limit next year: +30%", "Limit ryzyka na kolejny rok: +30%"), tr("Launch window priority: yes", "Priorytet w oknach startowych: tak"), tr("Experimental tech: approved", "Technologie eksperymentalne: zgoda"), tr("Budget: +15%", "Budżet: +15%")] };
+  if (u <= 0.8) return { key: "up", label: tr("Trust grows", "Zaufanie rośnie"), effects: [tr("Risk limit next year: +15%", "Limit ryzyka na kolejny rok: +15%"), tr("Launch window priority: yes", "Priorytet w oknach startowych: tak"), tr("Experimental tech: not yet", "Technologie eksperymentalne: jeszcze nie"), tr("Budget: +5%", "Budżet: +5%")] };
+  return { key: "flat", label: tr("Trust unchanged", "Zaufanie bez zmian"), effects: [tr("Risk limit next year: unchanged", "Limit ryzyka na kolejny rok: bez zmian"), tr("Launch window priority: no", "Priorytet w oknach startowych: nie"), tr("Experimental tech: no", "Technologie eksperymentalne: nie"), tr("Budget: unchanged", "Budżet: bez zmian")] };
+}
+
+// Klucz idzie do wyników (niezależny od języka), nazwa i opis na ekran.
+function archetype(s) {
+  const u = s.spent / LIMIT;
+  if (s.crises > 0) return ["costly", tr("A costly lesson", "Lekcja kosztowna"), tr("Risk hit something with no backup. The crew made it, but the agency won't forget.", "Ryzyko trafiło w coś, co nie miało zapasu. Załoga to przeżyła, ale agencja zapamięta.")];
+  if (s.schedule >= 0 && u <= 0.8) return ["engineer", tr("Mission engineer", "Inżynier misji"), tr("On time and with margin to spare. You took risks where the base could handle them.", "Na czas i z zapasem. Ryzykowałeś tam, gdzie baza to wytrzymywała.")];
+  if (s.schedule >= 0) return ["daredevil", tr("Daredevil", "Śmiałek"), tr("You made it, but on borrowed trust. This time the numbers worked out.", "Zdążyłeś, ale na kredyt zaufania. Tym razem rachunek się zgodził.")];
+  if (u <= 0.4) return ["guardian", tr("Guardian", "Strażnik"), tr("Safe and steady, but the deadline doesn't wait. Every day of delay has to be made up.", "Bezpiecznie i spokojnie, ale termin nie czeka. Każdy dzień opóźnienia trzeba będzie odrobić.")];
+  return ["headwind", tr("Against the wind", "Pod wiatr"), tr("The risks didn't buy time. The schedule slipped anyway.", "Ryzyko nie kupiło czasu. Harmonogram i tak się przesunął.")];
+}
+
+// Odpowiedzi ankiety zapisujemy kodami, żeby wyniki z obu języków dało się zliczać razem.
+const SURVEY = {
+  price: [["yes", "yes", "tak"], ["somewhat", "somewhat", "trochę"], ["no", "no", "nie"], ["ignored", "didn't notice it", "nie zwracałem uwagi"]],
+  driver: [["schedule", "the schedule", "harmonogram"], ["trust", "agency trust", "zaufanie agencji"], ["both", "both equally", "po równo"], ["neither", "neither", "żadne z nich"]],
+  cf: [["yes", "yes", "tak"], ["somewhat", "somewhat", "trochę"], ["no", "no", "nie"], ["none", "it wasn't in my report", "nie było jej w moim raporcie"]],
+};
+const radios = (name, list) => list.map(([v, en, pl]) => `<label><input type="radio" name="${name}" value="${v}">${tr(en, pl)}</label>`).join("");
+const muted = (t) => `<p style="margin:4px 0 0;color:var(--muted);font-size:14px">${t}</p>`;
+
+function finish() {
+  const s = state;
+  const verdict = trustVerdict(s);
+  const [archeKey, arche, archeText] = archetype(s);
+  const cfs = counterfactuals();
+  const wins = run.choices.filter((c) => c.risky && !c.incident && (c.level === "med" || c.level === "high"));
+  const bads = run.choices.filter((c) => c.incident);
+  const spofStart = CRITICAL.length;
+  const spofEnd = spofCount(s);
+
+  run.report = {
+    schedule: s.schedule, spent: s.spent, limit: LIMIT, trust: verdict.key, archetype: archeKey,
+    crises: s.crises, spof_start: spofStart, spof_end: spofEnd, cargo: s.cargo,
+    incidents: bads.length, counterfactuals: cfs.length,
+  };
+  run.finished_at = new Date().toISOString();
+  persistRun(run);
+
+  const usedPct = Math.round((s.spent / LIMIT) * 100);
+  const cardOf = (c) => CARDS.find((x) => x.id === c.card);
+  const tagLabel = { crisis: tr("crisis", "kryzys"), close: tr("close call", "o włos"), covered: tr("the backup worked", "zapasowe urządzenie zadziałało"), outage: tr("incident", "incydent") };
+  const moments = [
+    ...wins.map((c) => {
+      const card = cardOf(c), lvlWord = c.level === "high" ? tr("high", "wysokim") : tr("medium", "średnim");
+      return `<div class="moment win"><small>${tr("bet won", "zakład wygrany")} · ${fmtShort(card.t)}</small>${tr(`${tx(card.title)}: ${q(c.option_label)} at ${lvlWord} risk. It worked.`, `${tx(card.title)}: ${q(c.option_label)} przy ryzyku ${lvlWord}. Udało się.`)}</div>`;
+    }),
+    ...bads.map((c) => {
+      const card = cardOf(c);
+      const cls = c.outcome_tag === "crisis" ? "bad" : c.outcome_tag === "close" ? "close" : c.outcome_tag === "covered" ? "cf" : "bad";
+      return `<div class="moment ${cls}"><small>${tagLabel[c.outcome_tag]} · ${fmtShort(card.t)}</small>${tx(card.title)}: ${q(c.option_label)}.</div>`;
+    }),
+    ...cfs.map((c) => `<div class="moment cf"><small>${tr("what if", "co by było, gdyby")} · ${fmtShort(c.card.t)}</small>${tr(`You chose ${q(c.chosen)}. If you had chosen ${q(c.alt)}: ${c.text}`, `Wybrałeś ${q(c.chosen)}. Gdybyś wybrał ${q(c.alt)}: ${c.text}`)}</div>`),
+  ];
+
+  const pathRows = run.choices.map((c) => {
+    const card = cardOf(c);
+    const badge = c.risky ? `<span class="risk ${c.level}">${tx(LEVEL_LABEL[c.level])}</span>` : `<span class="risk none">${tr("safe", "bezpiecznie")}</span>`;
+    return `<tr><td>${fmtShort(card.t)}</td><td>${tx(card.title)}<br><b>${c.option_label}</b> ${badge}${c.why ? `<div class="why">${q(escapeHtml(c.why))}</div>` : ""}</td></tr>`;
+  }).join("");
+
+  const scheduleText = s.schedule >= 0
+    ? tr("Year goal reached on time or early.", "Cel roku osiągnięty na czas albo wcześniej.")
+    : tr(`Year goal moved to ${fmt(T_END - s.schedule * DAY)}. Later stages move with it.`, `Cel roku przesunięty na ${fmt(T_END - s.schedule * DAY)}. Kolejne etapy przesuwają się razem z nim.`);
+
+  $("game").hidden = true;
+  const rep = $("report");
+  rep.hidden = false;
+  rep.innerHTML = `
+    <div class="kicker">${tr("Agency annual report", "Raport roczny agencji")} · ${fmt(T_END)}</div>
+    <h1>${verdict.label}</h1>
+    <div class="verdict">
+      <div class="kicker" style="color:var(--muted)">${tr("Your style", "Twój styl")}</div>
+      <div class="arche">${arche}</div>
+      <p>${archeText}</p>
+    </div>
+    <div class="grid2">
+      <div class="box"><h3>${tr("Schedule", "Harmonogram")}</h3>
+        <div class="big ${s.schedule >= 0 ? "pos" : "neg"}">${s.schedule === 0 ? tr("on time", "na czas") : sDays(s.schedule)}</div>
+        ${muted(scheduleText)}
+      </div>
+      <div class="box"><h3>${tr("Risk budget", "Budżet ryzyka")}</h3>
+        <div class="big ${usedPct <= 80 ? "pos" : "neg"}">${usedPct}%</div>
+        ${muted(tr("of this year's limit used", "wykorzystanego rocznego limitu") + (DEBUG ? ` (${s.spent}/${LIMIT} pkt)` : "") + (s.commission ? tr(" · review board during the year", " · komisja przeglądowa w trakcie roku") : ""))}
+      </div>
+      <div class="box"><h3>${tr("Freedom next year", "Swoboda na kolejny rok")}</h3><ul>${verdict.effects.map((e) => `<li>${e}</li>`).join("")}</ul></div>
+      <div class="box"><h3>${tr("Weak spots", "Słabe punkty bazy")}</h3>
+        <div class="big ${spofEnd < spofStart ? "pos" : ""}">${spofStart} → ${spofEnd}</div>
+        ${muted(tr("important things without a backup (start → end of year)", "ważne rzeczy bez zapasowego urządzenia (początek → koniec roku)") + (s.crises ? tr(` · crew crises: ${s.crises}`, ` · kryzysy z załogą: ${s.crises}`) : ""))}
+      </div>
+    </div>
+
+    ${moments.length ? `<h2 class="sec">${tr("Highlights of the year", "Momenty roku")}</h2><div class="moments">${moments.join("")}</div>` : ""}
+
+    <h2 class="sec">${tr("Your decisions", "Twoja oś decyzji")}</h2>
+    <table class="path">${pathRows}</table>
+
+    <h2 class="sec">${tr("Your thoughts", "Twoje wrażenia")}</h2>
+    <div class="field"><label for="fbHard">${tr("Which decision was the hardest, and why?", "Która decyzja była najtrudniejsza i dlaczego?")}</label><textarea id="fbHard" rows="2"></textarea></div>
+    <div class="field"><label>${tr("Did the risk description next to each option help you decide?", "Czy opis ryzyka przy opcjach pomagał podjąć decyzję?")}</label>
+      <div class="radio-row">${radios("fbPrice", SURVEY.price)}</div></div>
+    <div class="field"><label>${tr("What influenced your decisions more?", "Co bardziej wpływało na twoje decyzje?")}</label>
+      <div class="radio-row">${radios("fbDriver", SURVEY.driver)}</div></div>
+    <div class="field"><label for="fbCoupling">${tr("Did you notice that earlier decisions changed the risk of later ones? Where?", "Czy zauważyłeś, że wcześniejsze decyzje zmieniały ryzyko późniejszych? Gdzie?")}</label><textarea id="fbCoupling" rows="2"></textarea></div>
+    <div class="field"><label>${tr(`Did the ${q("what if")} section change how you see your own decisions?`, `Czy sekcja ${q("co by było, gdyby")} zmieniła twoją ocenę własnych decyzji?`)}</label>
+      <div class="radio-row">${radios("fbCf", SURVEY.cf)}</div></div>
+    <div class="field"><label for="fbMissing">${tr("What was unclear or missing?", "Co było niejasne albo czego brakowało?")}</label><textarea id="fbMissing" rows="2"></textarea></div>
+    <div class="field"><label for="fbIdea">${tr("Any other comments or ideas?", "Inne uwagi i sugestie")}</label><textarea id="fbIdea" rows="2"></textarea></div>
+    <div class="start-row">
+      <button id="fbSave" class="btn primary">${tr("Save answers", "Zapisz odpowiedzi")}</button>
+      <button id="fbExport" class="btn">${tr("Download result (JSON)", "Pobierz wynik (JSON)")}</button>
+      <button id="again" class="btn">${tr("Play again", "Zagraj jeszcze raz")}</button>
+      <span id="fbSaved" class="saved"></span>
+    </div>
+    <p id="sendStatus" class="saved" style="color:var(--muted)"></p>`;
+  window.scrollTo({ top: 0 });
+  $("fbSave").addEventListener("click", () => {
+    run.feedback = {
+      hardest: $("fbHard").value.trim() || null,
+      price_helpful: document.querySelector("input[name=fbPrice]:checked")?.value || null,
+      driver: document.querySelector("input[name=fbDriver]:checked")?.value || null,
+      coupling_noticed: $("fbCoupling").value.trim() || null,
+      counterfactual_effect: document.querySelector("input[name=fbCf]:checked")?.value || null,
+      missing: $("fbMissing").value.trim() || null,
+      ideas: $("fbIdea").value.trim() || null,
+    };
+    persistRun(run);
+    $("fbSave").disabled = true;
+    $("fbSaved").textContent = tr("Saving…", "Zapisywanie…");
+    sync("feedback", run).then((ok) => {
+      $("fbSave").disabled = false;
+      $("fbSaved").textContent = ok || !REMOTE
+        ? tr("Saved. Thank you!", "Zapisane. Dziękujemy!")
+        : tr("Saved locally; we'll send it the next time you open the page. You can also download the JSON.", "Zapisane lokalnie; wyślemy przy następnym otwarciu strony. Możesz też pobrać JSON.");
+    });
+  });
+  $("sendStatus").textContent = REMOTE ? tr("Sending your result…", "Wysyłanie wyniku…") : "";
+  sync("run", run).then((ok) => {
+    if (!REMOTE) return;
+    $("sendStatus").textContent = ok
+      ? tr("Result sent.", "Wynik wysłany.")
+      : tr("Couldn't send your result. It's saved locally and will be sent the next time you open the page.", "Nie udało się wysłać wyniku. Jest zapisany lokalnie i pójdzie przy następnym otwarciu strony.");
+  });
+  $("fbExport").addEventListener("click", () => download(`decisions-${(run.tester || "anon").replace(/[^\w-]+/g, "_")}-${run.id.slice(0, 8)}.json`, run));
+  $("again").addEventListener("click", () => location.reload());
+}
+
+// ---------- zapis: lokalnie ----------
+function loadRuns() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY) || "[]"); } catch { return []; }
+}
+function persistRun(r) {
+  try {
+    const runs = loadRuns().filter((x) => x.id !== r.id);
+    runs.push(r);
+    localStorage.setItem(STORE_KEY, JSON.stringify(runs));
+  } catch { /* prywatne okno: wynik zostaje tylko do pobrania jako JSON */ }
+}
+// ---------- zapis: Supabase ----------
+// Ten sam projekt i klucz publiczny co telemetria gry (telemetry_config.tres); RLS pozwala tylko dopisać
+// własne przejście i jego ankietę (tools/telemetry/supabase/migrations/005_decision_map_runs.sql).
+const SUPABASE_URL = "https://rjxjatgeisvlggnjyabg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_dK__yFlzYSBwz3E9LKaqeg_qGg0-1jF";
+const REMOTE = PARAMS.get("remote") !== "0";
+const AUTH_KEY = "decision-map-auth";
+const OUTBOX_KEY = "decision-map-outbox";
+
+const lsGet = (k, fallback) => { try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch { return fallback; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* prywatne okno */ } };
+
+async function authCall(path, body) {
+  return fetch(`${SUPABASE_URL}/auth/v1/${path}`, {
+    method: "POST",
+    headers: { apikey: SUPABASE_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+// Anonimowy użytkownik jak w grze; refresh token jest jednorazowy, więc nowy zapisujemy od razu.
+// W pamięci też: bez localStorage (podgląd `data:`, prywatne okno) każde wywołanie tworzyłoby nowego
+// anonimowego użytkownika, a ankieta trafiałaby do cudzego wiersza, czyli nigdzie.
+let authCache = null;
+
+async function accessToken() {
+  const saved = authCache || lsGet(AUTH_KEY, null);
+  if (saved && saved.expires_at > Date.now() + 60000) return saved.access_token;
+  let res = saved?.refresh_token ? await authCall("token?grant_type=refresh_token", { refresh_token: saved.refresh_token }) : null;
+  if (!res || !res.ok) res = await authCall("signup", {});
+  if (!res.ok) throw new Error(`auth ${res.status}`);
+  const j = await res.json();
+  authCache = { access_token: j.access_token, refresh_token: j.refresh_token, expires_at: Date.now() + j.expires_in * 1000 };
+  lsSet(AUTH_KEY, authCache);
+  return j.access_token;
+}
+
+async function rest(method, path, body, prefer) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${await accessToken()}`,
+      "Content-Type": "application/json",
+      Prefer: prefer,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`${method} ${res.status}: ${await res.text()}`);
+  return res;
+}
+
+const sendRun = (r) => rest("POST", "decision_map_runs?on_conflict=id", {
+  id: r.id, version: r.version, tester: r.tester, started_at: r.started_at, finished_at: r.finished_at,
+  params: r.params, choices: r.choices, report: r.report,
+}, "return=minimal,resolution=ignore-duplicates");
+
+// RLS po cichu pomija cudzy wiersz (204 bez zmian), więc prosimy o zwrot `id` i sprawdzamy, że coś się zmieniło.
+async function sendFeedback(r) {
+  const res = await rest("PATCH", `decision_map_runs?id=eq.${r.id}&select=id`, { feedback: r.feedback, feedback_at: new Date().toISOString() }, "return=representation");
+  if (!(await res.json()).length) throw new Error("PATCH: wiersz przejścia niedostępny dla tej sesji");
+}
+
+function outbox(kind, id, add) {
+  const q = lsGet(OUTBOX_KEY, []).filter((x) => !(x.kind === kind && x.id === id));
+  if (add) q.push({ kind, id });
+  lsSet(OUTBOX_KEY, q);
+}
+
+// Wysyłka jest idempotentna; ankieta najpierw ponawia wiersz przejścia, bo PATCH bez wiersza nic nie zmienia.
+async function sync(kind, r) {
+  if (!REMOTE) return false;
+  outbox(kind, r.id, true);
+  try {
+    await sendRun(r);
+    if (kind === "feedback") await sendFeedback(r);
+    outbox(kind, r.id, false);
+    return true;
+  } catch (e) {
+    console.warn("Supabase:", e);
+    return false;
+  }
+}
+
+// Przejścia, których nie udało się wysłać (brak sieci, zamknięta karta), idą przy kolejnym otwarciu strony.
+async function flushOutbox() {
+  const runs = loadRuns();
+  for (const item of lsGet(OUTBOX_KEY, [])) {
+    const r = runs.find((x) => x.id === item.id);
+    if (!r) { outbox(item.kind, item.id, false); continue; }
+    if (!(await sync(item.kind, r))) break;
+  }
+}
+
+function download(name, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ---------- widok zbiorczy (lokalne przejścia) ----------
+function renderAgg() {
+  const runs = loadRuns().filter((r) => r.finished_at);
+  const choicesOf = (id) => runs.flatMap((r) => r.choices.filter((x) => x.card === id));
+  const rows = CARDS.map((c) => {
+    const chs = choicesOf(c.id);
+    const counts = c.options.map((o) => ({ o, n: chs.filter((x) => x.option === o.id).length }));
+    const total = chs.length || 1;
+    const dead = chs.length >= 3 && Math.max(...counts.map((x) => x.n)) / total > 0.8;
+    const times = chs.map((x) => x.ms_to_decide).sort((a, b) => a - b);
+    const median = times.length ? Math.round(times[Math.floor(times.length / 2)] / 1000) : 0;
+    const whys = chs.filter((x) => x.why).map((x) => `${x.option}: „${escapeHtml(x.why)}”`);
+    return `<tr><td>${fmtShort(c.t)}<br>${tx(c.title)}${dead ? `<br><span class="risk high">martwa karta?</span>` : ""}<div class="debug" style="color:var(--faint)">mediana ${median} s</div></td><td>${counts.map(({ o, n }) => `<div>${tx(o.label)} · ${n}<div class="bar" style="width:${(n / total) * 100}%"></div></div>`).join("")}</td><td class="why" style="color:var(--muted)">${whys.join("<br>")}</td></tr>`;
+  }).join("");
+
+  // H3: jak często gracz wybiera opcję o danym poziomie ryzyka, gdy ją miał do wyboru.
+  const byLevel = ["safe", "none", "low", "med", "high"].map((lv) => {
+    let offered = 0, taken = 0;
+    for (const r of runs) for (const ch of r.choices) for (const o of (ch.offered || []).some((x) => x.level !== "safe") ? ch.offered : []) {
+      if (o.level !== lv) continue;
+      offered += 1;
+      if (o.option === ch.option) taken += 1;
+    }
+    return { lv, offered, taken };
+  }).filter((x) => x.offered);
+  const lvName = { safe: "bezpieczne", none: "brak ryzyka", low: "niskie", med: "średnie", high: "wysokie" };
+
+  const riskyChoices = runs.flatMap((r) => r.choices.filter((x) => x.risky || (x.offered || []).some((o) => o.level !== "safe")));
+  const withWhy = riskyChoices.filter((x) => x.why).length;
+  const spent = runs.map((r) => Math.round((r.report.spent / r.report.limit) * 100)).sort((a, b) => a - b);
+  const tally = (vals) => Object.entries(vals.reduce((m, v) => ((m[v ?? "—"] = (m[v ?? "—"] || 0) + 1), m), {})).map(([k, n]) => `${k}: <b>${n}</b>`).join(" · ");
+  const fb = runs.map((r) => r.feedback || {});
+
+  $("aggView").innerHTML = `
+    <h2 class="sec">Wyniki lokalne · ${runs.length} ${runs.length === 1 ? "przejście" : "przejść"}</h2>
+    <div class="grid2">
+      <div class="box"><h3>H2 · Myślą o ryzyku?</h3>
+        <p style="margin:0;font-size:14px">Uzasadnienia przy kartach z ryzykiem: <b>${withWhy}/${riskyChoices.length}</b>. Treść jest w tabeli poniżej; mediana czasu decyzji przy każdej karcie.</p></div>
+      <div class="box"><h3>H3 · Czy cena ryzyka działa?</h3>
+        <ul>${byLevel.map((x) => `<li>${lvName[x.lv]}: wybrane ${x.taken}/${x.offered} (${Math.round((x.taken / x.offered) * 100)}%)</li>`).join("")}</ul>
+        <p style="margin:6px 0 0;font-size:12px;color:var(--muted)">Działa, gdy odsetek spada od niskiego do wysokiego.</p></div>
+      <div class="box"><h3>H4 · Czas kontra zaufanie</h3>
+        <p style="margin:0;font-size:14px">Zużycie budżetu: <b>${spent.join("%, ")}${spent.length ? "%" : "—"}</b></p>
+        <p style="margin:6px 0 0;font-size:14px">${tally(runs.map((r) => r.report.archetype))}</p></div>
+      <div class="box"><h3>H5–H7 · Ankieta</h3>
+        <p style="margin:0;font-size:13px">Opis ryzyka pomagał: ${tally(fb.map((f) => f.price_helpful))}</p>
+        <p style="margin:6px 0 0;font-size:13px">Co wpływało na decyzje: ${tally(fb.map((f) => f.driver))}</p>
+        <p style="margin:6px 0 0;font-size:13px">„Co by było, gdyby” zmieniło ocenę: ${tally(fb.map((f) => f.counterfactual_effect))}</p></div>
+    </div>
+    <p style="font-size:13px;color:var(--muted)">H1: karta jest oznaczona jako „martwa karta?”, gdy przy co najmniej 3 przejściach jedna opcja ma ponad 80% wyborów. H5: zobacz wybory w karcie „Grudniowa dostawa” i odpowiedzi na pytanie o zależności.</p>
+    <table class="agg"><tr><th>Sytuacja</th><th>Wybory</th><th>Dlaczego</th></tr>${rows}</table>
+    ${fb.some((f) => f.coupling_noticed || f.hardest || f.missing || f.ideas) ? `<h2 class="sec">Odpowiedzi otwarte</h2><table class="agg"><tr><th>Tester</th><th>Odpowiedzi</th></tr>${runs.map((r) => { const f = r.feedback || {}; const parts = [["najtrudniejsza", f.hardest], ["zależności", f.coupling_noticed], ["niejasne", f.missing], ["uwagi", f.ideas]].filter(([, v]) => v); return parts.length ? `<tr><td>${escapeHtml(r.tester || "anon")}</td><td>${parts.map(([k, v]) => `<b>${k}:</b> ${escapeHtml(v)}`).join("<br>")}</td></tr>` : ""; }).join("")}</table>` : ""}
+    <div class="start-row" style="margin-top:12px"><button class="btn" id="aggExport">Pobierz wszystkie (JSON)</button></div>`;
+  $("aggExport").addEventListener("click", () => download("decyzje-wszystkie.json", runs));
+}
+
+// ---------- ekran startowy ----------
+function introHtml() {
+  return `
+  <div class="intro-top">
+    <div class="kicker">${tr("A short decision game · about 3 minutes", "Krótka gra decyzyjna · ok. 3 minuty")}</div>
+    <div class="lang" role="group" aria-label="Language / Język">
+      <button type="button" data-lang="en" aria-pressed="${LANG === "en"}">EN</button>
+      <button type="button" data-lang="pl" aria-pressed="${LANG === "pl"}">PL</button>
+    </div>
+  </div>
+  <h1>${tx(UI.title)}</h1>
+  <div class="about">
+    <p>${tr("<b>This is a small game about running a base in space.</b> You play the mission engineer responsible for the base for one year. You'll face 10 situations, one after another: something breaks, time runs short, or you have to choose between “faster” and “safer”.",
+      "<b>To mała gra o prowadzeniu bazy w kosmosie.</b> Wcielasz się w inżyniera misji, który odpowiada za bazę przez jeden rok. Na ekranie pojawi się po kolei 10 sytuacji: coś się psuje, kończy się czas albo trzeba wybrać między „szybciej” a „bezpieczniej”.")}</p>
+    <p>${tr("In each situation you pick one option. There are no right answers: every decision gives you something and costs you something. At the end, the space agency reviews your year, and you'll see what would have happened if you had chosen differently.",
+      "W każdej sytuacji wybierasz jedną z opcji. Nie ma poprawnych odpowiedzi: każda decyzja coś daje i coś kosztuje. Na koniec agencja kosmiczna oceni twój rok, a ty zobaczysz, co by się stało, gdybyś wybrał inaczej.")}</p>
+    <p class="about-note">${tr("This game tests an idea for a bigger game about building a base in space. Your choices and your answers to the short survey at the end will help us design it.",
+      "Gra jest testem pomysłu do większej gry o budowie bazy w kosmosie. Twoje wybory i odpowiedzi z krótkiej ankiety na końcu pomogą nam ją zaprojektować.")}</p>
+  </div>
+  <h2 class="sec">${tr("Your mission", "Twoja misja")}</h2>
+  <p class="lead">${tr("It's July 8, 2031. A crew of four has just landed at a base on a distant, rocky world, a few days' flight from Earth. You're the mission engineer: for the next year, you make the decisions nobody else will make for you, and you put your name on them.",
+    "Jest 8 lipca 2031. Czwórka astronautów właśnie wylądowała przy bazie na odległym, skalistym globie, kilka dni lotu od Ziemi. Jesteś inżynierem misji: przez najbliższy rok podejmujesz decyzje, których nikt za ciebie nie podejmie, i podpisujesz się pod nimi.")}</p>
+
+  <div class="pressure">
+    <div class="pcard clock">
+      <div class="num">${tr("Deadline · July 2032", "Termin · lipiec 2032")}</div>
+      <h3>${tr("The agency gives you a year", "Agencja daje ci rok")}</h3>
+      <p>${tr("Deliveries from Earth are expensive and rare, so the base has to learn to manage on its own. This year's goal: <b>by July 2032, the base makes a quarter of what it needs by itself</b>. The agency logs every day of delay in its report, and the later stages of the program slip with it.",
+        "Dostawy z Ziemi są drogie i rzadkie, więc baza musi nauczyć się radzić sobie sama. Cel tego roku: <b>do lipca 2032 baza ma sama wytwarzać ćwierć tego, czego potrzebuje</b>. Każdy dzień opóźnienia agencja zapisze w raporcie, a kolejne etapy programu przesuną się razem z nim.")}</p>
+    </div>
+    <div class="pcard">
+      <div class="num">${tr("Risk budget · 1 year", "Budżet ryzyka · 1 rok")}</div>
+      <h3>${tr("The agency lets you take risks", "Agencja pozwala ryzykować")}</h3>
+      <p>${tr("…but only as much as it trusts you. Safe options cost time. Risky ones use up this year's trust reserve. If you go over it, the agency calls a review board.",
+        "…ale tylko tyle, ile ci ufa. Bezpieczne opcje kosztują czas. Ryzykowne zużywają roczny zapas zaufania. Jeśli go przekroczysz, agencja zwoła komisję przeglądową.")}</p>
+    </div>
+    <div class="pcard trust">
+      <div class="num">${tr("Annual report · July 2032", "Raport roczny · lipiec 2032")}</div>
+      <h3>${tr("Trust buys freedom", "Zaufanie daje swobodę")}</h3>
+      <p>${tr("After a year, the agency reviews your work. Trust means a higher risk limit next year, priority for launch windows and approval for experimental technology.",
+        "Po roku agencja oceni twoją pracę. Zaufanie oznacza większy limit ryzyka na kolejny rok, priorytet w oknach startowych i zgodę na technologie eksperymentalne.")}</p>
+    </div>
+  </div>
+
+  <div class="howto">
+    <b>${tr("How it works", "Jak to działa")}</b>
+    <ul>
+      <li>${tr("Situations appear on the timeline at the top. Click an option and confirm with <b>Sign the decision</b>.",
+        "Sytuacje pojawiają się na osi czasu u góry. Kliknij opcję i zatwierdź przyciskiem <b>Podpisuję decyzję</b>.")}</li>
+      <li>${tr("You can add one sentence about <b>why</b> you chose it. That's the most valuable part of the test for us.",
+        "Przy decyzji możesz dopisać jedno zdanie, <b>dlaczego</b> tak wybierasz. To dla nas najcenniejsza część testu.")}</li>
+      <li>${tr("The <b>Base status</b> panel shows how safe your oxygen, night power, water and food are. More green bars means safer. A full bar means you have a backup unit: if one breaks, the other keeps working. A single red bar means that after a failure, supplies run out before you can fix it.",
+        "Panel <b>Stan bazy</b> pokazuje, jak bezpieczne są tlen, prąd w nocy, woda i jedzenie. Im więcej zielonych kresek, tym spokojniej. Pełny pasek znaczy, że masz zapasowe urządzenie: gdy jedno się zepsuje, drugie pracuje dalej. Jedna czerwona kreska znaczy, że po awarii zapasy skończą się, zanim zdążysz naprawić.")}</li>
+    </ul>
+  </div>
+
+  <div class="field">
+    <label for="testerName">${tr("Name or nickname (optional)", "Imię lub pseudonim (opcjonalnie)")}</label>
+    <input id="testerName" type="text" maxlength="40" autocomplete="off" placeholder="${tr("e.g. Alex", "np. Ania")}">
+  </div>
+  <div class="start-row">
+    <button id="startBtn" class="btn primary">${tr("Start", "Zaczynamy")}</button>
+    <button id="aggBtn" class="small-link" hidden></button>
+  </div>
+  <div id="aggView" hidden></div>`;
+}
+
+function renderIntro() {
+  const name = $("testerName")?.value || "";
+  applyStatic();
+  $("intro").innerHTML = introHtml();
+  $("testerName").value = name;
+  $("startBtn").addEventListener("click", start);
+  document.querySelectorAll(".lang button").forEach((b) => b.addEventListener("click", () => {
+    if (b.dataset.lang === LANG) return;
+    LANG = b.dataset.lang;
+    try { localStorage.setItem(LANG_KEY, LANG); } catch { /* prywatne okno */ }
+    renderIntro();
+  }));
+  // Widok autora (?results=1): lokalne przejścia z tej przeglądarki, po polsku.
+  const n = loadRuns().filter((r) => r.finished_at).length;
+  if (!SHOW_RESULTS || !n) return;
+  const b = $("aggBtn");
+  b.hidden = false;
+  b.textContent = `Wyniki lokalne: ${n} ${n === 1 ? "przejście" : "przejść"}`;
+  b.addEventListener("click", () => { const v = $("aggView"); v.hidden = !v.hidden; if (!v.hidden) renderAgg(); });
+}
+
+// ---------- start ----------
+function start() {
+  state = initState();
+  run = newRun($("testerName").value.trim());
+  cardIndex = 0;
+  busy = false;
+  applyStatic();
+  $("intro").hidden = true;
+  $("game").hidden = false;
+  buildTrack();
+  renderTop();
+  renderBase();
+  addLog([{ date: T_START, kind: "good", text: tr("A crew of 4 is aboard the base. The first crew's year begins.", "Załoga (4 osoby) na pokładzie bazy. Zaczyna się rok pierwszej załogi.") }]);
+  renderCard();
+  window.scrollTo({ top: 0 });
+}
+
+renderIntro();
+if (REMOTE) flushOutbox();
+</script>
+</body>
+</html>
