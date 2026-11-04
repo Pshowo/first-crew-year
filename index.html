@@ -244,6 +244,15 @@
   .lang button { background: transparent; color: var(--muted); border: 0; padding: 5px 12px; font: 600 12px var(--mono); letter-spacing: .08em; }
   .lang button[aria-pressed=true] { background: var(--panel-2); color: var(--text); }
   .lang button:focus-visible { outline: 2px solid var(--time); outline-offset: -2px; }
+  .risk-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 8px; font: 12px var(--mono); color: var(--muted); }
+  .risk-meta b { font-weight: 600; }
+  .rm.c1 b, .rm.s1 b { color: var(--ok); }
+  .rm.c2 b, .rm.s2 b { color: var(--med); }
+  .rm.c3 b, .rm.s3 b { color: var(--high); }
+  .rm.s0 b { color: var(--time); }
+  .fn-days { font: 12px var(--mono); color: var(--muted); margin-left: auto; min-width: 44px; text-align: right; }
+  .meanwhile p { margin: 0 0 10px; max-width: 68ch; }
+  .meanwhile time { font: 600 12px var(--mono); color: var(--time); margin-right: 6px; }
 </style>
 </head>
 <body>
@@ -304,8 +313,10 @@ const DEBUG = PARAMS.has("debug");
 const SHOW_PRICE = PARAMS.get("price") !== "0";
 const FREE_LOW = PARAMS.get("freeLow") === "1";
 const LIMIT = Number(PARAMS.get("limit")) || 24;
+// Opóźnienie, które agencja jeszcze uznaje za „na czas”. Bez niej wynik „Inżynier misji” był nieosiągalny.
+const TOLERANCE = 10;
 const SHOW_RESULTS = DEBUG || PARAMS.has("results");
-const VERSION = "v1";
+const VERSION = "v2";
 const STORE_KEY = "decision-map-runs";
 const LANG_KEY = "decision-map-lang";
 
@@ -335,9 +346,9 @@ const UI = {
   statSchedule: { en: "Schedule", pl: "Harmonogram" },
   statTrust: { en: "Trust reserve", pl: "Zapas zaufania" },
   legSafe: { en: "safe", pl: "bezpiecznie" },
-  legLow: { en: "low risk", pl: "ryzyko niskie" },
-  legMed: { en: "medium", pl: "średnie" },
-  legHigh: { en: "high", pl: "wysokie" },
+  legLow: { en: "low trust cost", pl: "niski koszt zaufania" },
+  legMed: { en: "medium", pl: "średni" },
+  legHigh: { en: "high", pl: "wysoki" },
   legNight: { en: "night", pl: "noc" },
   legDelivery: { en: "delivery from Earth", pl: "dostawa z Ziemi" },
   logTitle: { en: "Mission log", pl: "Dziennik misji" },
@@ -408,7 +419,7 @@ function initState() {
       { id: "d2", date: D("2031-12-14"), parts: 1, label: { en: "December delivery", pl: "Dostawa grudniowa" }, done: false },
       { id: "d3", date: D("2032-04-20"), parts: 2, label: { en: "April delivery", pl: "Dostawa kwietniowa" }, done: false },
     ],
-    pending: [],
+    pending: [{ date: D("2032-02-12"), kind: "battery_fault" }],
   };
 }
 
@@ -420,6 +431,8 @@ function restoreDays(s, fn) {
   const base = FUNCS[fn].repair;
   return s.parts > 0 && s.rovers > 0 ? base : daysToNext(s) + base;
 }
+// Ile dni zapasu tlenu zje praca elektrolizera na pół gwizdka do najbliższej dostawy (połowa dziennego zużycia).
+const halfPowerLoss = (s) => Math.round((daysToNext(s) + 2) / 4);
 function partsNote(s) {
   return s.parts > 0 && s.rovers > 0
     ? tr("spare parts on base", "części są w bazie")
@@ -438,12 +451,31 @@ function fnSeverity(s, fn, opts = {}) {
 }
 function severity(s, risk) { return risk.severity ? risk.severity(s) : fnSeverity(s, risk.fn, risk); }
 
+// Gracze czytali „ryzyko niskie” jako „mała szansa awarii”, a to iloczyn szansy i skutku.
+// Dlatego przy opcji pokazujemy osobno szansę i skutek, a łączny poziom nazywamy kosztem zaufania.
 const LEVEL_LABEL = {
-  none: { en: "no risk", pl: "brak ryzyka" },
-  low: { en: "low risk", pl: "ryzyko niskie" },
-  med: { en: "medium risk", pl: "ryzyko średnie" },
-  high: { en: "high risk", pl: "ryzyko wysokie" },
+  none: { en: "no trust cost", pl: "bez kosztu zaufania" },
+  low: { en: "low trust cost", pl: "niski koszt zaufania" },
+  med: { en: "medium trust cost", pl: "średni koszt zaufania" },
+  high: { en: "high trust cost", pl: "wysoki koszt zaufania" },
 };
+const CHANCE = {
+  1: { en: "low (about 1 in 7)", pl: "niska (ok. 1 na 7)" },
+  2: { en: "medium (about 1 in 3)", pl: "średnia (ok. 1 na 3)" },
+  3: { en: "high (almost 1 in 2)", pl: "wysoka (prawie 1 na 2)" },
+};
+const IMPACT = {
+  0: { en: "none, the backup covers it", pl: "żaden, zapas przejmie" },
+  1: { en: "small", pl: "mały" },
+  2: { en: "serious", pl: "poważny" },
+  3: { en: "critical", pl: "krytyczny" },
+};
+function riskMeta(L, S) {
+  return `<div class="risk-meta">
+    <span class="rm c${L}">${tr("Chance of failure", "Szansa awarii")}: <b>${tx(CHANCE[L])}</b></span>
+    <span class="rm s${S}">${tr("Impact", "Skutek")}: <b>${tx(IMPACT[S])}</b></span>
+  </div>`;
+}
 function level(L, S) { const v = L * S; return v === 0 ? "none" : v <= 2 ? "low" : v <= 4 ? "med" : "high"; }
 function points(lvl) { return { none: 0, low: FREE_LOW ? 0 : 2, med: 6, high: 12 }[lvl]; }
 const chance = (L) => L * 0.15;
@@ -501,7 +533,7 @@ function loseRealizer(s, fn, risk = {}) {
   return {
     text: tr(`The outage lasted ${plDays(r)}. ${cap(res)} left: ${plDays(F.stock)}.`,
       `Przerwa trwała ${plDays(r)}. ${cap(res)} zostało na ${plDays(F.stock)}.`),
-    tag: "outage", schedule: -2,
+    tag: "outage", schedule: -1,
   };
 }
 const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
@@ -538,7 +570,7 @@ const CARDS = [
       {
         id: "B", label: { en: "Stop and replace the pump", pl: "Zatrzymaj i wymień pompę" },
         desc: { en: "The electrolyzer is down for two days while a rover fits a spare pump.", pl: "Elektrolizer stoi dwa dni, łazik montuje pompę z zapasu." },
-        effects: { schedule: -3, parts: -1, stock: { o2: -2 } },
+        effects: { schedule: -2, parts: -1, stock: { o2: -2 } },
         requires: NO_PARTS,
         outcome: (s) => tr(`Pump replaced. ${s.parts === 0 ? "That was the last spare part kit on the base." : ""}`,
           `Pompa wymieniona. ${s.parts === 0 ? "To był ostatni zestaw części w bazie." : ""}`),
@@ -559,7 +591,7 @@ const CARDS = [
         desc: { en: "6 hours of slack on the route. A successful run speeds up the water system.", pl: "6 godzin zapasu na trasie. Udany kurs przyspiesza linię wody." },
         risk: {
           L: 2, roll: 0.25,
-          severity: (s) => (s.rovers >= 2 ? 0 : 2),
+          severity: (s) => (s.rovers >= 2 ? 1 : 2),
           describe: (s) => (s.rovers >= 2
             ? tr("If the rover gets stuck, the other one takes over base work, but the expedition is lost and repairs get slower.",
               "Jeśli łazik utknie, drugi przejmie prace bazy, ale ekspedycja przepadnie, a naprawy potrwają dłużej.")
@@ -571,7 +603,7 @@ const CARDS = [
             return {
               text: tr("The rover got stuck in shadow 3 km from the base and waited out the night on minimal power. It will be back on Aug 26. Until then, one rover runs the base.",
                 "Łazik utknął w cieniu 3 km od bazy i przeczekał noc na minimalnym zasilaniu. Wróci 26 sierpnia. Do tego czasu bazę obsługuje jeden łazik."),
-              tag: "outage", schedule: -2,
+              tag: "outage", schedule: -1,
             };
           },
         },
@@ -581,7 +613,7 @@ const CARDS = [
       {
         id: "B", label: { en: "Wait for sunrise", pl: "Czekaj do świtu" },
         desc: { en: "Make the trip after the night, in 16 days.", pl: "Wyprawa po nocy, za 16 dni." },
-        effects: { schedule: -6 },
+        effects: { schedule: -3 },
         outcome: { en: "Trip postponed. The water team waits for the samples.", pl: "Wyprawa przesunięta. Zespół wody czeka na próbki." },
       },
     ],
@@ -598,7 +630,7 @@ const CARDS = [
       {
         id: "A", label: { en: "Full leak test", pl: "Pełna próba szczelności" },
         desc: { en: "5 days; the tank is filled only after the test.", pl: "5 dni, zbiornik napełniony dopiero po próbie." },
-        effects: { schedule: -5, cap: { water: 20 }, stock: { water: 20 } },
+        effects: { schedule: -2, cap: { water: 20 }, stock: { water: 20 } },
         outcome: { en: "The test found a small leak at a joint. Sealed before filling.", pl: "Próba wykazała mały przeciek na łączeniu. Uszczelniony przed napełnieniem." },
       },
       {
@@ -659,7 +691,7 @@ const CARDS = [
       {
         id: "A", label: { en: "Service now", pl: "Przegląd teraz" },
         desc: { en: "Greenhouse assembly slips by a few days.", pl: "Montaż szklarni przesuwa się o kilka dni." },
-        effects: { schedule: -4, stock: { water: -3 } },
+        effects: { schedule: -1, stock: { water: -3 } },
         outcome: { en: "Pre-filters replaced; one was close to clogging.", pl: "Wymieniono filtry wstępne; jeden był bliski zatkania." },
       },
       {
@@ -681,7 +713,7 @@ const CARDS = [
     options: [
       {
         id: "A", label: { en: "Second electrolyzer", pl: "Drugi elektrolizer" },
-        desc: { en: "A backup oxygen source. If one electrolyzer breaks, the other keeps making oxygen.", pl: "Zapasowe źródło tlenu. Gdy jeden elektrolizer się zepsuje, drugi dalej robi tlen." },
+        desc: { en: "A backup oxygen source. If one electrolyzer breaks, the other keeps making oxygen, and inspections stop slowing work down (about +2 days).", pl: "Zapasowe źródło tlenu. Gdy jeden elektrolizer się zepsuje, drugi dalej robi tlen, a przeglądy przestają hamować prace (ok. +2 dni)." },
         effects: { cargo: "electrolyzer" },
         outcome: { en: "Electrolyzer added to the cargo. Launch in December.", pl: "Elektrolizer dopisany do ładunku. Start w grudniu." },
       },
@@ -693,13 +725,13 @@ const CARDS = [
       },
       {
         id: "C", label: { en: "Greenhouse Mk2 kit", pl: "Zestaw szklarni Mk2" },
-        desc: { en: "Speeds up the first harvest; the schedule gains about 8 days.", pl: "Przyspiesza pierwszy plon; harmonogram zyska ok. 8 dni." },
+        desc: { en: "Speeds up the first harvest; the schedule gains about 4 days.", pl: "Przyspiesza pierwszy plon; harmonogram zyska ok. 4 dni." },
         effects: { cargo: "greenhouse" },
         outcome: { en: "Greenhouse added to the cargo. Launch in December.", pl: "Szklarnia dopisana do ładunku. Start w grudniu." },
       },
       {
         id: "D", label: { en: "Three spare part kits", pl: "Trzy zestawy części" },
-        desc: { en: "Faster repairs for the rest of the year.", pl: "Szybsze naprawy przez resztę roku." },
+        desc: { en: "Faster repairs for the rest of the year; the schedule gains about 2 days.", pl: "Szybsze naprawy przez resztę roku; harmonogram zyska ok. 2 dni." },
         effects: { cargo: "parts" },
         outcome: { en: "Spare parts added to the cargo. Launch in December.", pl: "Części dopisane do ładunku. Start w grudniu." },
       },
@@ -729,7 +761,7 @@ const CARDS = [
             return {
               text: tr(`The storm disrupted the rocket's electronics. A course correction moves the landing to ${fmt(d.date)}.`,
                 `Burza zakłóciła elektronikę rakiety. Poprawka kursu przesuwa lądowanie na ${fmt(d.date)}.`),
-              tag: "outage", schedule: -3,
+              tag: "outage", schedule: -2,
             };
           },
         },
@@ -738,7 +770,7 @@ const CARDS = [
       {
         id: "B", label: { en: "Wait for the next opportunity", pl: "Poczekaj na następną okazję" },
         desc: { en: "Launch on Dec 19, landing on Dec 25.", pl: "Start 19 grudnia, lądowanie 25 grudnia." },
-        effects: { schedule: -4, d2: D("2031-12-25") },
+        effects: { schedule: -2, d2: D("2031-12-25") },
         outcome: { en: "Launch moved. The storm passed on Dec 11, and the new date was calm.", pl: "Start przesunięty. Burza przeszła 11 grudnia, a nowy termin był spokojny." },
       },
     ],
@@ -779,32 +811,56 @@ const CARDS = [
     title: { en: "Electrolyzer at 4,000 hours", pl: "Elektrolizer po 4000 godzinach" },
     text: (s) => {
       const two = s.f.o2.realizers >= 2;
-      return tr(`The manufacturer recommends a cell inspection after 4,000 hours of operation. The inspection stops oxygen production for 5 days. If a cell cracks, regular spare parts won't help: a new cell only comes with the next delivery.${two ? " A second electrolyzer has been running since December." : ""}`,
-        `Producent zaleca przegląd ogniw po 4000 godzinach pracy. Przegląd zatrzymuje produkcję tlenu na 5 dni. Jeśli ogniwo pęknie, zwykłe części zamienne nie wystarczą: nowe ogniwo przyleci dopiero z najbliższą dostawą.${two ? " Od grudnia pracuje drugi elektrolizer." : ""}`);
+      return tr(`The manufacturer recommends a cell inspection after 4,000 hours of operation. The inspection stops oxygen production for 5 days. If a cell cracks, the electrolyzer can only run at half power until a new cell arrives with the next delivery.${two ? " A second electrolyzer has been running since December." : ""}`,
+        `Producent zaleca przegląd ogniw po 4000 godzinach pracy. Przegląd zatrzymuje produkcję tlenu na 5 dni. Jeśli ogniwo pęknie, elektrolizer będzie pracował na pół gwizdka, dopóki nowe ogniwo nie przyleci z najbliższą dostawą.${two ? " Od grudnia pracuje drugi elektrolizer." : ""}`);
     },
     facts: ["o2", "delivery"],
     options: [
       {
         id: "A", label: { en: "Inspect now", pl: "Przegląd teraz" },
-        desc: { en: "5 days of downtime and two people on the job.", pl: "5 dni przerwy i dwie osoby przy pracy." },
-        effects: { schedule: -5, stockIfSingle: { o2: -3 } },
+        desc: { en: "5 days without new oxygen and two people on the job.", pl: "5 dni bez nowego tlenu i dwie osoby przy pracy." },
+        effects: { schedule: -1, scheduleIfSingle: { o2: -2 }, stockIfSingle: { o2: -3 } },
         outcome: { en: "Two cells had cracks. Replaced just in time.", pl: "Na dwóch ogniwach znaleziono pęknięcia. Wymienione w porę." },
       },
       {
         id: "B", label: { en: "Postpone until summer", pl: "Odłóż do lata" },
         desc: { en: "Inspection after the annual report, no downtime now.", pl: "Przegląd po raporcie rocznym, bez przestoju teraz." },
+        // Pęknięte ogniwo nie zatrzymuje elektrolizera, tylko obcina mu wydajność do dostawy: zapas topnieje, ale nie znika.
         risk: {
-          L: 3, fn: "o2", roll: 0.30,
-          restore: (s) => daysToNext(s) + 2,
-          restoreNote: { en: "a new cell has to come from Earth", pl: "nowe ogniwo trzeba sprowadzić z Ziemi" },
+          L: 2, fn: "o2", roll: 0.25,
+          severity: (s) => {
+            if (s.f.o2.realizers >= 2) return 0;
+            const loss = halfPowerLoss(s), z = s.f.o2.stock;
+            return z >= 2 * loss ? 1 : z >= loss ? 2 : 3;
+          },
+          describe: (s) => (s.f.o2.realizers >= 2
+            ? tr("If a cell cracks, the second electrolyzer takes over. Nothing happens.", "Jeśli ogniwo pęknie, drugi elektrolizer przejmie produkcję. Nic się nie stanie.")
+            : tr(`If a cell cracks, the electrolyzer runs at half power until the next delivery (in ${plDays(daysToNext(s))}). The oxygen reserve would drop by about ${plDays(halfPowerLoss(s))} out of ${plDays(s.f.o2.stock)}.`,
+              `Jeśli ogniwo pęknie, elektrolizer do najbliższej dostawy (za ${plDays(daysToNext(s))}) będzie pracował na pół gwizdka. Zapas tlenu spadnie o ok. ${plDays(halfPowerLoss(s))} z ${plDays(s.f.o2.stock)}.`)),
           incident: (s) => {
-            const r = loseRealizer(s, "o2", { restore: (x) => daysToNext(x) + 2 });
-            const covered = r.tag === "covered";
-            r.text = tr(`On Mar 23 an electrolyzer cell cracked. ${covered ? "The second electrolyzer took over oxygen production, and a new cell arrives in April." : r.text}`,
-              `23 marca pękło ogniwo elektrolizera. ${covered ? "Drugi elektrolizer przejął produkcję tlenu, a nowe ogniwo przyleci w kwietniu." : r.text}`);
-            return r;
+            if (s.f.o2.realizers >= 2) {
+              return {
+                text: tr("On Mar 23 an electrolyzer cell cracked. The second electrolyzer took over oxygen production, and a new cell arrives in April.",
+                  "23 marca pękło ogniwo elektrolizera. Drugi elektrolizer przejął produkcję tlenu, a nowe ogniwo przyleci w kwietniu."),
+                tag: "covered", schedule: -1,
+              };
+            }
+            const F = s.f.o2;
+            F.stock = Math.round((F.stock - halfPowerLoss(s)) * 10) / 10;
+            if (F.stock < 0) {
+              F.stock = 2;
+              s.crises += 1;
+              return { text: tr(`On Mar 23 an electrolyzer cell cracked and oxygen ran out before the delivery. ${tx(CRISIS_TEXT.o2)}`, `23 marca pękło ogniwo elektrolizera i tlenu zabrakło przed dostawą. ${tx(CRISIS_TEXT.o2)}`), tag: "crisis", schedule: -15 };
+            }
+            const close = F.stock < 4;
+            return {
+              text: tr(`On Mar 23 an electrolyzer cell cracked. Until the April delivery it ran at half power. Oxygen left: ${plDays(F.stock)}.${close ? " That was close." : ""}`,
+                `23 marca pękło ogniwo elektrolizera. Do kwietniowej dostawy pracował na pół gwizdka. Tlenu zostało na ${plDays(F.stock)}.${close ? " Było o włos." : ""}`),
+              tag: close ? "close" : "outage", schedule: -2,
+            };
           },
         },
+        successText: { en: "The cells held out until summer.", pl: "Ogniwa wytrzymały do lata." },
       },
     ],
   },
@@ -838,7 +894,7 @@ const CARDS = [
       {
         id: "B", label: { en: "Hold and check the sensor", pl: "Wstrzymaj i sprawdź czujnik" },
         desc: { en: "Start-up 3 days later.", pl: "Uruchomienie 3 dni później." },
-        effects: { schedule: -3, realizers: { water: 1 } },
+        effects: { schedule: -1, realizers: { water: 1 } },
         outcome: { en: "The check showed the sensor was fine and the pressure really was too high. Valve replaced before start-up. First local water, no surprises.", pl: "Sprawdzenie pokazało, że czujnik działał, a ciśnienie naprawdę było za wysokie. Zawór wymieniony przed uruchomieniem. Pierwsza lokalna woda, bez niespodzianek." },
       },
     ],
@@ -876,6 +932,7 @@ function applyEffects(s, e) {
   if (e.cap) for (const k in e.cap) s.f[k].cap += e.cap[k];
   if (e.stock) for (const k in e.stock) s.f[k].stock = clampStock(s, k, s.f[k].stock + e.stock[k]);
   if (e.stockIfSingle) for (const k in e.stockIfSingle) if (s.f[k].realizers < 2) s.f[k].stock = clampStock(s, k, s.f[k].stock + e.stockIfSingle[k]);
+  if (e.scheduleIfSingle) for (const k in e.scheduleIfSingle) if (s.f[k].realizers < 2) s.schedule += e.scheduleIfSingle[k];
   if (e.realizers) for (const k in e.realizers) s.f[k].realizers += e.realizers[k];
   if (e.cargo) { s.cargo = e.cargo; s.deliveries.find((d) => d.id === "d2").cargo = e.cargo; }
   if (e.d2) s.deliveries.find((d) => d.id === "d2").date = e.d2;
@@ -891,15 +948,23 @@ function advanceTo(s, target) {
       d.done = true;
       s.parts += d.parts;
       let extra = "";
-      if (d.cargo === "electrolyzer") { s.f.o2.realizers += 1; extra = tr(" Second electrolyzer online.", " Drugi elektrolizer uruchomiony."); }
+      if (d.cargo === "electrolyzer") { s.f.o2.realizers += 1; s.schedule += 2; extra = tr(" Second electrolyzer online: inspections no longer stop the work (schedule +2 days).", " Drugi elektrolizer uruchomiony: przeglądy nie wstrzymują już prac (harmonogram +2 dni)."); }
       if (d.cargo === "battery") { s.f.power.realizers += 1; s.f.power.cap += 2; s.f.power.stock += 2; extra = tr(" Second battery bank connected.", " Drugi zestaw baterii podłączony."); }
-      if (d.cargo === "greenhouse") { s.schedule += 8; s.f.food.stock = clampStock(s, "food", s.f.food.stock + 20); extra = tr(" Greenhouse Mk2 being assembled (schedule +8 days).", " Szklarnia Mk2 w montażu (harmonogram +8 dni)."); }
-      if (d.cargo === "parts") { s.parts += 3; extra = tr(" Three extra spare part kits.", " Trzy dodatkowe zestawy części."); }
-      events.push({ date: s.date, kind: "delivery", text: `${tx(d.label)}: ${d.parts} ${kits(d.parts)}.${extra}` });
+      if (d.cargo === "greenhouse") { s.schedule += 4; s.f.food.stock = clampStock(s, "food", s.f.food.stock + 20); extra = tr(" Greenhouse Mk2 being assembled (schedule +4 days).", " Szklarnia Mk2 w montażu (harmonogram +4 dni)."); }
+      if (d.cargo === "parts") { s.parts += 3; s.schedule += 2; extra = tr(" Three extra spare part kits: no waiting for parts (schedule +2 days).", " Trzy dodatkowe zestawy części: koniec czekania na części (harmonogram +2 dni)."); }
+      events.push({ date: s.date, kind: "delivery", notable: !!d.cargo, text: `${tx(d.label)}: ${d.parts} ${kits(d.parts)}.${extra}` });
     }
     s.pending = s.pending.filter((p) => {
       if (p.date > s.date) return true;
       if (p.kind === "rover_back") { s.rovers += 1; events.push({ date: s.date, kind: "good", text: tr("The rover made it back to the base after the night.", "Łazik wrócił do bazy po nocy.") }); }
+      if (p.kind === "battery_fault") {
+        if (s.f.power.realizers >= 2) {
+          events.push({ date: s.date, kind: "good", notable: true, text: tr("A battery bank failed during the night. The second bank took over, and work went on as usual.", "W nocy padł jeden zestaw baterii. Drugi zestaw przejął zasilanie, a prace szły dalej.") });
+        } else {
+          s.schedule -= 4;
+          events.push({ date: s.date, kind: "bad", notable: true, text: tr("The only battery bank failed during the night. The base ran on emergency power for 2 days and work stopped (schedule −4 days).", "W nocy padł jedyny zestaw baterii. Baza przez 2 doby działała na zasilaniu awaryjnym, a prace stanęły (harmonogram −4 dni).") });
+        }
+      }
       return false;
     });
     for (const k in s.f) {
@@ -1001,7 +1066,7 @@ function renderBase(flashKeys = []) {
         : tr(` · repair takes about ${plDays(restoreDays(s, k))}`, ` · naprawa trwa ok. ${plDays(restoreDays(s, k))}`));
     const segs = [1, 2, 3, 4, 5].map((i) => `<i${i <= lvl ? ` class="on l${lvl}"` : ""}></i>`).join("");
     return `<div class="fn${flashKeys.includes(k) ? " flash" : ""}" title="${tip}">
-      <span class="fn-name">${tx(M.name)}</span><span class="segs">${segs}</span>
+      <span class="fn-name">${tx(M.name)}</span><span class="fn-days">${plDays(F.stock)}</span><span class="segs">${segs}</span>
     </div>`;
   }).join("");
   const nd = nextDelivery(s);
@@ -1053,7 +1118,9 @@ function stockChip(k, days) {
 function effectChips(s, opt) {
   const e = opt.effects || {};
   const out = [];
-  if (e.schedule) out.push([e.schedule > 0 ? "pos" : "neg", tr(`schedule ${sDays(e.schedule)}`, `${sDays(e.schedule)} harmonogramu`)]);
+  let sched = e.schedule || 0;
+  if (e.scheduleIfSingle) for (const k in e.scheduleIfSingle) if (s.f[k].realizers < 2) sched += e.scheduleIfSingle[k];
+  if (sched) out.push([sched > 0 ? "pos" : "neg", tr(`schedule ${sDays(sched)}`, `${sDays(sched)} harmonogramu`)]);
   if (opt.success?.schedule) out.push(["pos", tr(`${sDays(opt.success.schedule)} if it works`, `${sDays(opt.success.schedule)}, jeśli się uda`)]);
   if (e.parts) out.push(["neg", `${signed(e.parts)} ${kits(e.parts)}`]);
   if (e.stock) for (const k in e.stock) if (e.stock[k] < 0) out.push(["neg", stockChip(k, -e.stock[k])]);
@@ -1086,7 +1153,7 @@ function renderCard() {
       const S = severity(s, o.risk), lvl = level(o.risk.L, S);
       if (SHOW_PRICE) {
         badge = `<span class="risk ${lvl}">${tx(LEVEL_LABEL[lvl])}</span>`;
-        riskHtml = `<div class="opt-risk">${describeRisk(s, o.risk)}</div>`;
+        riskHtml = `${riskMeta(o.risk.L, S)}<div class="opt-risk">${describeRisk(s, o.risk)}</div>`;
       }
       if (DEBUG) riskHtml += `<div class="debug">L${o.risk.L} × S${S} = ${o.risk.L * S} → ${points(lvl)} pkt · szansa ${Math.round(chance(o.risk.L) * 100)}% · rzut ${o.risk.roll}</div>`;
     } else if (SHOW_PRICE && c.options.some((x) => x.risk)) {
@@ -1227,6 +1294,7 @@ function next() {
   busy = true;
   const target = cardIndex + 1 < CARDS.length ? CARDS[cardIndex + 1].t : T_END;
   const from = state.date;
+  const before = structuredClone(state);
   const events = advanceTo(state, target);
   const n = plDays(daysBetween(from, target));
   $("cardArea").innerHTML = `<div class="travel">${tr(`${n} pass…`, `mija ${n}…`)}</div>`;
@@ -1237,9 +1305,24 @@ function next() {
     renderTop();
     renderBase(events.length ? Object.keys(FUNCS) : []);
     busy = false;
-    if (cardIndex < CARDS.length) renderCard();
-    else finish();
+    const cont = () => (cardIndex < CARDS.length ? renderCard() : finish());
+    const notable = events.filter((e) => e.notable);
+    if (notable.length) renderMeanwhile(notable, before, cont);
+    else cont();
   });
+}
+
+// Zdarzenia bez decyzji gracza (awaria, dostawa z ładunkiem), żeby było widać, jak wcześniejsze wybory działają w tle.
+function renderMeanwhile(events, before, cont) {
+  $("cardArea").innerHTML = `
+    <article class="card meanwhile">
+      <div class="card-head"><span class="card-type">${tr("Meanwhile at the base", "Tymczasem w bazie")}</span></div>
+      ${events.map((e) => `<p><time>${fmt(e.date)}</time>${e.text}</p>`).join("")}
+      <div class="chips">${diffChips(before, state)}</div>
+      <div class="row-end" style="margin-top:16px"><button id="contBtn" class="btn primary">${tr("Continue", "Dalej")}</button></div>
+    </article>`;
+  $("contBtn").addEventListener("click", cont);
+  $("contBtn").focus();
 }
 
 function animateDate(from, to, done) {
@@ -1280,11 +1363,13 @@ function trustVerdict(s) {
 }
 
 // Klucz idzie do wyników (niezależny od języka), nazwa i opis na ekran.
+const onTime = (s) => s.schedule >= -TOLERANCE;
+
 function archetype(s) {
   const u = s.spent / LIMIT;
   if (s.crises > 0) return ["costly", tr("A costly lesson", "Lekcja kosztowna"), tr("Risk hit something with no backup. The crew made it, but the agency won't forget.", "Ryzyko trafiło w coś, co nie miało zapasu. Załoga to przeżyła, ale agencja zapamięta.")];
-  if (s.schedule >= 0 && u <= 0.8) return ["engineer", tr("Mission engineer", "Inżynier misji"), tr("On time and with margin to spare. You took risks where the base could handle them.", "Na czas i z zapasem. Ryzykowałeś tam, gdzie baza to wytrzymywała.")];
-  if (s.schedule >= 0) return ["daredevil", tr("Daredevil", "Śmiałek"), tr("You made it, but on borrowed trust. This time the numbers worked out.", "Zdążyłeś, ale na kredyt zaufania. Tym razem rachunek się zgodził.")];
+  if (onTime(s) && u <= 0.8) return ["engineer", tr("Mission engineer", "Inżynier misji"), tr("On time and with margin to spare. You took risks where the base could handle them.", "Na czas i z zapasem. Ryzykowałeś tam, gdzie baza to wytrzymywała.")];
+  if (onTime(s)) return ["daredevil", tr("Daredevil", "Śmiałek"), tr("You made it, but on borrowed trust. This time the numbers worked out.", "Zdążyłeś, ale na kredyt zaufania. Tym razem rachunek się zgodził.")];
   if (u <= 0.4) return ["guardian", tr("Guardian", "Strażnik"), tr("Safe and steady, but the deadline doesn't wait. Every day of delay has to be made up.", "Bezpiecznie i spokojnie, ale termin nie czeka. Każdy dzień opóźnienia trzeba będzie odrobić.")];
   return ["headwind", tr("Against the wind", "Pod wiatr"), tr("The risks didn't buy time. The schedule slipped anyway.", "Ryzyko nie kupiło czasu. Harmonogram i tak się przesunął.")];
 }
@@ -1322,7 +1407,7 @@ function finish() {
   const moments = [
     ...wins.map((c) => {
       const card = cardOf(c), lvlWord = c.level === "high" ? tr("high", "wysokim") : tr("medium", "średnim");
-      return `<div class="moment win"><small>${tr("bet won", "zakład wygrany")} · ${fmtShort(card.t)}</small>${tr(`${tx(card.title)}: ${q(c.option_label)} at ${lvlWord} risk. It worked.`, `${tx(card.title)}: ${q(c.option_label)} przy ryzyku ${lvlWord}. Udało się.`)}</div>`;
+      return `<div class="moment win"><small>${tr("bet won", "zakład wygrany")} · ${fmtShort(card.t)}</small>${tr(`${tx(card.title)}: ${q(c.option_label)} at a ${lvlWord} trust cost. It worked.`, `${tx(card.title)}: ${q(c.option_label)} przy ${lvlWord} koszcie zaufania. Udało się.`)}</div>`;
     }),
     ...bads.map((c) => {
       const card = cardOf(c);
@@ -1340,6 +1425,8 @@ function finish() {
 
   const scheduleText = s.schedule >= 0
     ? tr("Year goal reached on time or early.", "Cel roku osiągnięty na czas albo wcześniej.")
+    : onTime(s)
+    ? tr(`A few days late, but within the agency's ${TOLERANCE}-day tolerance.`, `Kilka dni po terminie, ale w granicach ${TOLERANCE} dni tolerancji agencji.`)
     : tr(`Year goal moved to ${fmt(T_END - s.schedule * DAY)}. Later stages move with it.`, `Cel roku przesunięty na ${fmt(T_END - s.schedule * DAY)}. Kolejne etapy przesuwają się razem z nim.`);
 
   $("game").hidden = true;
@@ -1355,7 +1442,7 @@ function finish() {
     </div>
     <div class="grid2">
       <div class="box"><h3>${tr("Schedule", "Harmonogram")}</h3>
-        <div class="big ${s.schedule >= 0 ? "pos" : "neg"}">${s.schedule === 0 ? tr("on time", "na czas") : sDays(s.schedule)}</div>
+        <div class="big ${onTime(s) ? "pos" : "neg"}">${s.schedule === 0 ? tr("on time", "na czas") : sDays(s.schedule)}</div>
         ${muted(scheduleText)}
       </div>
       <div class="box"><h3>${tr("Risk budget", "Budżet ryzyka")}</h3>
@@ -1598,7 +1685,7 @@ function renderAgg() {
 function introHtml() {
   return `
   <div class="intro-top">
-    <div class="kicker">${tr("A short decision game · about 3 minutes", "Krótka gra decyzyjna · ok. 3 minuty")}</div>
+    <div class="kicker">${tr("A short decision game · about 5 minutes", "Krótka gra decyzyjna · ok. 5 minut")}</div>
     <div class="lang" role="group" aria-label="Language / Język">
       <button type="button" data-lang="en" aria-pressed="${LANG === "en"}">EN</button>
       <button type="button" data-lang="pl" aria-pressed="${LANG === "pl"}">PL</button>
@@ -1621,8 +1708,8 @@ function introHtml() {
     <div class="pcard clock">
       <div class="num">${tr("Deadline · July 2032", "Termin · lipiec 2032")}</div>
       <h3>${tr("The agency gives you a year", "Agencja daje ci rok")}</h3>
-      <p>${tr("Deliveries from Earth are expensive and rare, so the base has to learn to manage on its own. This year's goal: <b>by July 2032, the base makes a quarter of what it needs by itself</b>. The agency logs every day of delay in its report, and the later stages of the program slip with it.",
-        "Dostawy z Ziemi są drogie i rzadkie, więc baza musi nauczyć się radzić sobie sama. Cel tego roku: <b>do lipca 2032 baza ma sama wytwarzać ćwierć tego, czego potrzebuje</b>. Każdy dzień opóźnienia agencja zapisze w raporcie, a kolejne etapy programu przesuną się razem z nim.")}</p>
+      <p>${tr("Deliveries from Earth are expensive and rare, so the base has to learn to manage on its own. This year's goal: <b>by July 2032, the base makes a quarter of what it needs by itself</b>. The agency accepts up to 10 days of delay. Beyond that, it logs every day in its report, and the later stages of the program slip with it.",
+        "Dostawy z Ziemi są drogie i rzadkie, więc baza musi nauczyć się radzić sobie sama. Cel tego roku: <b>do lipca 2032 baza ma sama wytwarzać ćwierć tego, czego potrzebuje</b>. Agencja toleruje do 10 dni opóźnienia. Każdy kolejny dzień zapisze w raporcie, a dalsze etapy programu przesuną się razem z nim.")}</p>
     </div>
     <div class="pcard">
       <div class="num">${tr("Risk budget · 1 year", "Budżet ryzyka · 1 rok")}</div>
@@ -1643,6 +1730,8 @@ function introHtml() {
     <ul>
       <li>${tr("Situations appear on the timeline at the top. Click an option and confirm with <b>Sign the decision</b>.",
         "Sytuacje pojawiają się na osi czasu u góry. Kliknij opcję i zatwierdź przyciskiem <b>Podpisuję decyzję</b>.")}</li>
+      <li>${tr("Each risky option shows the <b>chance of failure</b> and its <b>impact</b>. Together they set the <b>trust cost</b>: a likely but harmless failure can be cheap, a rare but critical one expensive.",
+        "Przy każdej ryzykownej opcji widzisz <b>szansę awarii</b> i jej <b>skutek</b>. Razem dają <b>koszt zaufania</b>: częsta, ale niegroźna awaria bywa tania, a rzadka, ale krytyczna drogo kosztuje.")}</li>
       <li>${tr("You can add one sentence about <b>why</b> you chose it. That's the most valuable part of the test for us.",
         "Przy decyzji możesz dopisać jedno zdanie, <b>dlaczego</b> tak wybierasz. To dla nas najcenniejsza część testu.")}</li>
       <li>${tr("The <b>Base status</b> panel shows how safe your oxygen, night power, water and food are. More green bars means safer. A full bar means you have a backup unit: if one breaks, the other keeps working. A single red bar means that after a failure, supplies run out before you can fix it.",
