@@ -253,6 +253,60 @@
   .fn-days { font: 12px var(--mono); color: var(--muted); margin-left: auto; min-width: 44px; text-align: right; }
   .meanwhile p { margin: 0 0 10px; max-width: 68ch; }
   .meanwhile time { font: 600 12px var(--mono); color: var(--time); margin-right: 6px; }
+  .hero-rules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 22px; }
+  @media (max-width: 700px) { .hero-rules { grid-template-columns: minmax(0, 1fr); } }
+  .hero-rules div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 2px; animation: enter .5s both; }
+  .hero-rules div:nth-child(2) { animation-delay: .08s; }
+  .hero-rules div:nth-child(3) { animation-delay: .16s; }
+  .hero-rules b { font-size: 15px; }
+  .hero-rules span { font-size: 13.5px; color: var(--muted); }
+  .start-row input { flex: 1 1 200px; max-width: 260px; font: inherit; font-size: 14px; color: var(--text); background: var(--bg); border: 1px solid var(--line-2); border-radius: 8px; padding: 9px 11px; }
+  .start-row input:focus { outline: none; border-color: var(--time); }
+  .fine { font-size: 12.5px; color: var(--faint); margin: 14px 0 0; }
+  .card { position: relative; }
+  .opt { animation: enter .4s both; }
+  .opt:nth-child(2) { animation-delay: .06s; }
+  .opt:nth-child(3) { animation-delay: .12s; }
+  .opt:nth-child(4) { animation-delay: .18s; }
+  .opt .opt-risk { display: none; }
+  .opt[aria-pressed=true] .opt-risk { display: block; animation: enter .25s both; }
+  .opt[aria-pressed=true] { transform: translateY(-1px); }
+  .meters { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font: 12px var(--mono); color: var(--muted); align-items: center; }
+  .meters b { color: var(--text); font-weight: 600; margin-left: 4px; }
+  .meters .backup { color: var(--time); }
+  .pips { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: 0; }
+  .pips i { width: 8px; height: 8px; border-radius: 50%; background: var(--line-2); }
+  .pips.c1 i.on, .pips.s1 i.on { background: var(--ok); }
+  .pips.c2 i.on, .pips.s2 i.on { background: var(--med); }
+  .pips.c3 i.on, .pips.s3 i.on { background: var(--high); }
+  .resolving .opt { pointer-events: none; }
+  .resolving .opt:not([aria-pressed=true]) { opacity: .3; transition: opacity .3s; }
+  .stamp { position: absolute; right: 22px; top: 16px; font: 700 17px var(--mono); letter-spacing: .18em; color: var(--accent); border: 3px solid var(--accent); border-radius: 6px; padding: 4px 10px; transform: rotate(-8deg); pointer-events: none; animation: stamp .45s cubic-bezier(.2,1.5,.4,1) both; }
+  @keyframes stamp { from { opacity: 0; transform: rotate(-8deg) scale(2.4); } }
+  .gauge-wrap { margin: 8px 0 4px; animation: enter .3s both; }
+  .gauge { position: relative; height: 30px; border-radius: 6px; background: rgba(91, 209, 139, .16); border: 1px solid var(--line-2); overflow: hidden; transition: box-shadow .3s; }
+  .gauge .zone { position: absolute; inset: 0 auto 0 0; background: rgba(255, 107, 94, .34); }
+  .gauge .needle { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; left: 0; background: var(--text); box-shadow: 0 0 10px rgba(255, 255, 255, .7); }
+  .gauge.hit { box-shadow: 0 0 0 2px var(--high); }
+  .gauge.miss { box-shadow: 0 0 0 2px var(--ok); }
+  .gauge-labels { display: flex; justify-content: space-between; font: 11px var(--mono); color: var(--muted); margin-top: 4px; }
+  .outcome .tag { animation: pop .4s cubic-bezier(.2,1.5,.4,1) both; }
+  @keyframes pop { from { opacity: 0; transform: scale(.5); } }
+  .outcome p { animation: enter .35s .1s both; }
+  .outcome .chips .chip { animation: enter .3s both; }
+  .outcome .chips .chip:nth-child(2) { animation-delay: .08s; }
+  .outcome .chips .chip:nth-child(3) { animation-delay: .16s; }
+  .outcome .chips .chip:nth-child(n+4) { animation-delay: .24s; }
+  .travel-bar { height: 3px; max-width: 240px; margin: 12px auto 0; background: var(--line); border-radius: 2px; overflow: hidden; }
+  .travel-bar i { display: block; height: 100%; background: var(--time); animation: grow 1.1s ease-in-out both; }
+  @keyframes grow { from { width: 0; } to { width: 100%; } }
+  .moment { animation: enter .4s both; }
+  .moment:nth-child(2) { animation-delay: .1s; }
+  .moment:nth-child(3) { animation-delay: .2s; }
+  .moment:nth-child(n+4) { animation-delay: .3s; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
+  }
 </style>
 </head>
 <body>
@@ -316,7 +370,7 @@ const LIMIT = Number(PARAMS.get("limit")) || 24;
 // Opóźnienie, które agencja jeszcze uznaje za „na czas”. Bez niej wynik „Inżynier misji” był nieosiągalny.
 const TOLERANCE = 10;
 const SHOW_RESULTS = DEBUG || PARAMS.has("results");
-const VERSION = "v2";
+const VERSION = "v3";
 const STORE_KEY = "decision-map-runs";
 const LANG_KEY = "decision-map-lang";
 
@@ -460,9 +514,9 @@ const LEVEL_LABEL = {
   high: { en: "high trust cost", pl: "wysoki koszt zaufania" },
 };
 const CHANCE = {
-  1: { en: "low (about 1 in 7)", pl: "niska (ok. 1 na 7)" },
-  2: { en: "medium (about 1 in 3)", pl: "średnia (ok. 1 na 3)" },
-  3: { en: "high (almost 1 in 2)", pl: "wysoka (prawie 1 na 2)" },
+  1: { en: "low", pl: "niska" },
+  2: { en: "medium", pl: "średnia" },
+  3: { en: "high", pl: "wysoka" },
 };
 const IMPACT = {
   0: { en: "none, the backup covers it", pl: "żaden, zapas przejmie" },
@@ -471,9 +525,11 @@ const IMPACT = {
   3: { en: "critical", pl: "krytyczny" },
 };
 function riskMeta(L, S) {
-  return `<div class="risk-meta">
-    <span class="rm c${L}">${tr("Chance of failure", "Szansa awarii")}: <b>${tx(CHANCE[L])}</b></span>
-    <span class="rm s${S}">${tr("Impact", "Skutek")}: <b>${tx(IMPACT[S])}</b></span>
+  const pips = (n, cls) => `<span class="pips ${cls}">${[1, 2, 3].map((i) => `<i${i <= n ? ' class="on"' : ""}></i>`).join("")}</span>`;
+  const impact = S === 0 ? `<b class="backup">${tr("backup covers it", "zapas przejmie")}</b>` : `<b>${tx(IMPACT[S])}</b>${pips(S, `s${S}`)}`;
+  return `<div class="meters">
+    <span>${tr("Chance of failure", "Szansa awarii")} <b>${tx(CHANCE[L])}</b>${pips(L, `c${L}`)}</span>
+    <span>${tr("Impact", "Skutek")} ${impact}</span>
   </div>`;
 }
 function level(L, S) { const v = L * S; return v === 0 ? "none" : v <= 2 ? "low" : v <= 4 ? "med" : "high"; }
@@ -556,8 +612,8 @@ const CARDS = [
     id: "c01", date: "2031-07-24", type: TYPE.cont,
     title: { en: "Electrolyzer: vibrating pump", pl: "Elektrolizer: drgania pompy elektrolitu" },
     text: {
-      en: "Two weeks after the crew landed, the vibration sensor on the electrolyte pump crossed its warning threshold. The pump still works, but the trend is rising. The electrolyzer is the only local source of oxygen for four people.",
-      pl: "Dwa tygodnie po lądowaniu załogi czujnik drgań pompy elektrolitu przekroczył próg ostrzegawczy. Pompa pracuje, ale trend rośnie. Elektrolizer to jedyne lokalne źródło tlenu dla czterech osób.",
+      en: "The pump in your only oxygen maker vibrates harder every day. It still works, for now.",
+      pl: "Pompa w jedynym źródle tlenu drga z każdym dniem mocniej. Na razie działa.",
     },
     facts: ["o2", "parts", "delivery"],
     options: [
@@ -581,8 +637,8 @@ const CARDS = [
     id: "c02", date: "2031-08-09", type: TYPE.go,
     title: { en: "Ice run before sunset", pl: "Wyprawa po lód przed zmierzchem" },
     text: {
-      en: "A rover can bring back ice samples from the crater rim. It's the first step toward local water. Sunset is 40 hours away and the round trip takes about 34. If the rover gets stuck, the night lasts two weeks.",
-      pl: "Łazik może przywieźć próbki lodu z krawędzi krateru. To pierwszy krok do lokalnej wody. Do zachodu Słońca zostało 40 godzin, a kurs w obie strony zajmie około 34. Jeśli łazik utknie, noc potrwa dwa tygodnie.",
+      en: "A rover can fetch ice from a crater: 34 hours of driving, 40 hours of daylight left. Getting stuck means two weeks of night.",
+      pl: "Łazik może przywieźć lód z krateru: 34 godziny jazdy, 40 godzin światła. Utknięcie to dwa tygodnie nocy.",
     },
     facts: ["rovers", "night"],
     options: [
@@ -622,8 +678,8 @@ const CARDS = [
     id: "c03", date: "2031-08-30", type: TYPE.sturdy,
     title: { en: "Second water tank", pl: "Drugi zbiornik wody" },
     text: {
-      en: "A tank that holds 20 days of water is almost installed. The procedure calls for a full leak test: 5 days under pressure. A short test takes a few hours and only catches big leaks.",
-      pl: "Montaż zbiornika na 20 dni zapasu wody dobiega końca. Procedura przewiduje pełną próbę szczelności: 5 dni pod ciśnieniem. Skrócona próba trwa kilka godzin i wykrywa tylko duże nieszczelności.",
+      en: "A new water tank is ready. A full leak test takes 5 days; a quick one takes hours but only catches big leaks.",
+      pl: "Nowy zbiornik wody jest gotowy. Pełna próba szczelności to 5 dni, szybka trwa godziny, ale wykrywa tylko duże przecieki.",
     },
     facts: ["water"],
     options: [
@@ -659,8 +715,8 @@ const CARDS = [
     id: "c04", date: "2031-10-07", type: TYPE.reserve,
     title: { en: "Night in two days: run the tile plant on batteries?", pl: "Noc za dwa dni: zakład płytek na bateriach?" },
     text: {
-      en: "The plant that bakes building tiles from local dust is catching up on a delay. If it runs through the night, the batteries drop from 30% to 10%. The batteries are the only power source at night, and emergency power lasts 2 days.",
-      pl: "Zakład, który wypala płytki budowlane z miejscowego pyłu, nadrabia opóźnienie. Jeśli będzie pracował przez noc, baterie rozładują się z 30% do 10%. Baterie to jedyne źródło prądu w nocy, a awaryjne zasilanie wystarczy na 2 doby.",
+      en: "Night falls in two days. Running the tile plant through it drains the batteries, the base's only night power, down to 10%.",
+      pl: "Za dwa dni zapada noc. Praca zakładu płytek przez noc rozładuje baterie, jedyne nocne zasilanie bazy, do 10%.",
     },
     facts: ["power", "parts"],
     options: [
@@ -683,8 +739,8 @@ const CARDS = [
     id: "c05", date: "2031-10-28", type: TYPE.now,
     title: { en: "Water recycling service at the busiest time", pl: "Przegląd odzysku wody w szczycie prac" },
     text: {
-      en: "The scheduled service of the water recycling system falls in the week the greenhouse is being assembled. It stops recycling for 3 days and ties up a rover and two people.",
-      pl: "Planowy przegląd instalacji odzysku wody wypada w tygodniu montażu szklarni. Zatrzymuje odzysk na 3 dni i zajmuje łazik oraz dwie osoby.",
+      en: "The water recycler is due for a 3-day service, right when everyone is building the greenhouse.",
+      pl: "Odzysk wody czeka na 3-dniowy przegląd, akurat gdy wszyscy montują szklarnię.",
     },
     facts: ["water", "parts"],
     options: [
@@ -706,8 +762,8 @@ const CARDS = [
     id: "c06", date: "2031-11-18", type: TYPE.invest,
     title: { en: "December delivery: one free slot", pl: "Grudniowa dostawa: jedno wolne miejsce" },
     text: {
-      en: "There's room for one more item on the December flight. Each one would help, but only one can fly.",
-      pl: "W ładowni grudniowego lotu zostało miejsce na jeden ładunek. Każdy się przyda, ale poleci tylko jeden.",
+      en: "One free slot on the December flight. Pick what it carries.",
+      pl: "Jedno wolne miejsce w grudniowym locie. Wybierz, co poleci.",
     },
     facts: ["spof", "parts"],
     options: [
@@ -742,8 +798,8 @@ const CARDS = [
     title: { en: "Launch vs. a solar storm forecast", pl: "Start rakiety a prognoza burzy słonecznej" },
     text: (s) => {
       const cargo = s.cargo ? tx(CARGO[s.cargo].name) : tr("cargo", "ładunek");
-      return tr(`The rocket with the December delivery (${cargo} plus 1 spare part kit) is on the pad. The forecast says a solar storm may hit 2–4 days after launch. The next launch opportunity is in 11 days.`,
-        `Rakieta z grudniową dostawą (${cargo} i 1 zestaw części) stoi na stanowisku. Prognoza mówi, że w ciągu 2–4 dni po starcie może przyjść burza słoneczna. Następna okazja do startu będzie za 11 dni.`);
+      return tr(`The December rocket (${cargo}) is ready. A solar storm may hit 2–4 days after launch; the next launch chance is in 11 days.`,
+        `Grudniowa rakieta (${cargo}) jest gotowa. Burza słoneczna może przyjść 2–4 dni po starcie, a następna okazja do startu będzie za 11 dni.`);
     },
     facts: ["parts", "delivery"],
     options: [
@@ -779,8 +835,8 @@ const CARDS = [
     id: "c08", date: "2032-01-20", type: TYPE.check,
     title: { en: "Greenhouse: less light in section 2", pl: "Szklarnia: mniej światła w sekcji 2" },
     text: {
-      en: "Section 2 of the greenhouse is giving 30% less light. The usual cause is an LED panel, but it could also be the section's power supply. Harvest is 5 weeks away.",
-      pl: "Sekcja 2 szklarni daje 30% mniej światła. Najczęstszą przyczyną jest panel LED, ale może to być też zasilacz sekcji. Do zbiorów zostało 5 tygodni.",
+      en: "Greenhouse section 2 lost 30% of its light. Usually it's an LED panel, sometimes the power supply. Harvest is in 5 weeks.",
+      pl: "Sekcja 2 szklarni straciła 30% światła. Zwykle to panel LED, czasem zasilacz. Do zbiorów 5 tygodni.",
     },
     facts: ["food", "parts"],
     options: [
@@ -811,8 +867,8 @@ const CARDS = [
     title: { en: "Electrolyzer at 4,000 hours", pl: "Elektrolizer po 4000 godzinach" },
     text: (s) => {
       const two = s.f.o2.realizers >= 2;
-      return tr(`The manufacturer recommends a cell inspection after 4,000 hours of operation. The inspection stops oxygen production for 5 days. If a cell cracks, the electrolyzer can only run at half power until a new cell arrives with the next delivery.${two ? " A second electrolyzer has been running since December." : ""}`,
-        `Producent zaleca przegląd ogniw po 4000 godzinach pracy. Przegląd zatrzymuje produkcję tlenu na 5 dni. Jeśli ogniwo pęknie, elektrolizer będzie pracował na pół gwizdka, dopóki nowe ogniwo nie przyleci z najbliższą dostawą.${two ? " Od grudnia pracuje drugi elektrolizer." : ""}`);
+      return tr(`The electrolyzer is due for a 5-day cell inspection. If a cell cracks, it runs at half power until the next delivery.${two ? " A second one has been running since December." : ""}`,
+        `Elektrolizer czeka na 5-dniowy przegląd ogniw. Jeśli ogniwo pęknie, do najbliższej dostawy będzie pracował na pół gwizdka.${two ? " Od grudnia pracuje drugi." : ""}`);
     },
     facts: ["o2", "delivery"],
     options: [
@@ -868,8 +924,8 @@ const CARDS = [
     id: "c10", date: "2032-05-18", type: TYPE.cont,
     title: { en: "Ice-to-water system: odd sensor reading", pl: "Instalacja wody z lodu: dziwny odczyt czujnika" },
     text: {
-      en: "The start-up checklist for the first ice-to-water system stopped at one item: a pressure sensor reads at the edge of the normal range. Most likely the sensor itself is faulty. Checking it takes 3 days.",
-      pl: "Lista kontrolna przed uruchomieniem pierwszej instalacji wody z lodu zatrzymała się na jednym punkcie: czujnik ciśnienia pokazuje wartość na granicy normy. Najpewniej zepsuł się sam czujnik. Sprawdzenie go zajmie 3 dni.",
+      en: "Start-up of the first ice-to-water system is blocked by one odd pressure reading. Probably a faulty sensor; checking it takes 3 days.",
+      pl: "Uruchomienie pierwszej instalacji wody z lodu blokuje jeden dziwny odczyt ciśnienia. Pewnie zepsuty czujnik, sprawdzenie zajmie 3 dni.",
     },
     facts: ["water", "parts"],
     options: [
@@ -1071,6 +1127,8 @@ function renderBase(flashKeys = []) {
   }).join("");
   const nd = nextDelivery(s);
   const ndText = nd ? tr(`in ${plDays(daysBetween(s.date, nd.date))}`, `za ${plDays(daysBetween(s.date, nd.date))}`) : "—";
+  const prev = lastStock;
+  lastStock = Object.fromEntries(Object.keys(FUNCS).map((k) => [k, s.f[k].stock]));
   $("basePanel").innerHTML = `
     <h3>${tr("Base status", "Stan bazy")}</h3>
     <p class="hint">${tr("More green bars = safer. Hover over a row for details.", "Więcej zielonych kresek = bezpieczniej. Najedź na wiersz, żeby zobaczyć szczegóły.")}</p>
@@ -1080,6 +1138,24 @@ function renderBase(flashKeys = []) {
       <span>${tr("Spare parts", "Części")} <b>${s.parts}</b></span>
       <span>${tr("Delivery", "Dostawa")} <b>${ndText}</b></span>
     </div>`;
+  if (!prev) return;
+  document.querySelectorAll("#basePanel .fn-days").forEach((el, i) => {
+    const k = Object.keys(FUNCS)[i];
+    if (prev[k] !== s.f[k].stock) countUp(el, prev[k], s.f[k].stock, plDays);
+  });
+}
+
+let lastStock = null;
+
+function countUp(el, from, to, format, dur = 700) {
+  if (REDUCED) { el.textContent = format(to); return; }
+  const t0 = performance.now();
+  const step = (now) => {
+    const k = Math.min(1, (now - t0) / dur);
+    el.textContent = format(from + (to - from) * (1 - Math.pow(1 - k, 3)));
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
 function addLog(events) {
@@ -1248,23 +1324,62 @@ function decide(card, opt) {
     ? tr(`Continue · ${plDays(daysBetween(s.date, CARDS[cardIndex + 1].t))} pass`, `Dalej · mija ${plDays(daysBetween(s.date, CARDS[cardIndex + 1].t))}`)
     : tr("To the annual report", "Do raportu rocznego");
 
-  $("cardArea").querySelector(".card").innerHTML = `
-    ${cardHead(card)}
-    <div class="outcome">
-      <div class="chosen">${tr("Decision", "Decyzja")}: <b>${label}</b>${opt.risk && SHOW_PRICE ? ` · ${tx(LEVEL_LABEL[lvl])}` : ""}${why ? ` · ${q(escapeHtml(why))}` : ""}</div>
-      ${tagHtml}
-      ${texts.filter(Boolean).map((t) => `<p>${t}</p>`).join("")}
-      ${commissionNow ? `<div class="banner">${tr("<b>The agency calls a review board.</b> You've used up this year's trust reserve. For the rest of the year, every medium or high risk decision needs an extra review (−2 days of schedule).", "<b>Agencja zwołuje komisję przeglądową.</b> Przekroczyłeś roczny zapas zaufania. Do końca roku każda decyzja o ryzyku średnim lub wysokim wymaga dodatkowego przeglądu (−2 dni harmonogramu).")}</div>` : ""}
-      <div class="chips">${deltas}</div>
-    </div>
-    <div class="row-end" style="margin-top:16px">
-      <button id="nextBtn" class="btn primary">${nextLabel}</button>
+  const show = () => {
+    $("cardArea").querySelector(".card").innerHTML = `
+      ${cardHead(card)}
+      <div class="outcome">
+        <div class="chosen">${tr("Decision", "Decyzja")}: <b>${label}</b>${opt.risk && SHOW_PRICE ? ` · ${tx(LEVEL_LABEL[lvl])}` : ""}${why ? ` · ${q(escapeHtml(why))}` : ""}</div>
+        ${tagHtml}
+        ${texts.filter(Boolean).map((t) => `<p>${t}</p>`).join("")}
+        ${commissionNow ? `<div class="banner">${tr("<b>The agency calls a review board.</b> You've used up this year's trust reserve. For the rest of the year, every medium or high risk decision needs an extra review (−2 days of schedule).", "<b>Agencja zwołuje komisję przeglądową.</b> Przekroczyłeś roczny zapas zaufania. Do końca roku każda decyzja o ryzyku średnim lub wysokim wymaga dodatkowego przeglądu (−2 dni harmonogramu).")}</div>` : ""}
+        <div class="chips">${deltas}</div>
+      </div>
+      <div class="row-end" style="margin-top:16px">
+        <button id="nextBtn" class="btn primary">${nextLabel}</button>
+      </div>`;
+    $("nextBtn").addEventListener("click", next);
+    $("nextBtn").focus();
+    renderTop();
+    renderBase(Object.keys(FUNCS).filter((k) => before.f[k].stock !== s.f[k].stock || before.f[k].realizers !== s.f[k].realizers));
+    renderTrack();
+  };
+  playResolve(opt, incident, show);
+}
+
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// Pieczątka, a przy ryzyku wskaźnik losowania: czerwona strefa ma szerokość szansy awarii, a wskazówka
+// staje na stałym rzucie tej opcji, więc gracz widzi, czemu się udało albo nie.
+function playResolve(opt, incident, done) {
+  busy = true;
+  const card = $("cardArea").querySelector(".card");
+  card.classList.add("resolving");
+  card.insertAdjacentHTML("beforeend", `<div class="stamp">${tr("SIGNED", "PODPISANO")}</div>`);
+  const finish = () => { busy = false; done(); };
+  if (!opt.risk) { setTimeout(finish, REDUCED ? 0 : 700); return; }
+  const p = chance(opt.risk.L), target = `${opt.risk.roll * 100}%`;
+  setTimeout(() => {
+    const sign = card.querySelector(".sign");
+    sign.innerHTML = `<div class="gauge-wrap">
+      <div class="gauge"><div class="zone" style="width:${p * 100}%"></div><div class="needle"></div></div>
+      <div class="gauge-labels"><span>${tr("failure", "awaria")} · ${Math.round(p * 100)}%</span><span>${tr("all good", "w porządku")}</span></div>
     </div>`;
-  $("nextBtn").addEventListener("click", next);
-  $("nextBtn").focus();
-  renderTop();
-  renderBase(Object.keys(FUNCS).filter((k) => before.f[k].stock !== s.f[k].stock || before.f[k].realizers !== s.f[k].realizers));
-  renderTrack();
+    const gauge = sign.querySelector(".gauge"), needle = sign.querySelector(".needle");
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      needle.style.left = target;
+      gauge.classList.add(incident ? "hit" : "miss");
+      setTimeout(finish, REDUCED ? 0 : 700);
+    };
+    if (REDUCED || !needle.animate) { settle(); return; }
+    const anim = needle.animate([{ left: "0%" }, { left: "94%" }, { left: "6%" }, { left: "72%" }, { left: target }],
+      { duration: 1700, easing: "cubic-bezier(.25,.7,.3,1)", fill: "forwards" });
+    anim.onfinish = settle;
+    // Karta w tle wstrzymuje animacje i onfinish nie przychodzi; gra nie może przez to stanąć.
+    setTimeout(settle, 2000);
+  }, REDUCED ? 0 : 600);
 }
 
 function diffChips(a, b) {
@@ -1297,7 +1412,7 @@ function next() {
   const before = structuredClone(state);
   const events = advanceTo(state, target);
   const n = plDays(daysBetween(from, target));
-  $("cardArea").innerHTML = `<div class="travel">${tr(`${n} pass…`, `mija ${n}…`)}</div>`;
+  $("cardArea").innerHTML = `<div class="travel">${tr(`${n} pass…`, `mija ${n}…`)}<div class="travel-bar"><i></i></div></div>`;
   cardIndex += 1;
   renderTrack();
   animateDate(from, target, () => {
@@ -1327,13 +1442,23 @@ function renderMeanwhile(events, before, cont) {
 
 function animateDate(from, to, done) {
   const t0 = performance.now(), dur = 1100;
+  let ended = false;
+  const end = () => {
+    if (ended) return;
+    ended = true;
+    $("statDate").textContent = fmt(to);
+    done();
+  };
   const step = (now) => {
+    if (ended) return;
     const k = Math.min(1, (now - t0) / dur);
     const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
     $("statDate").textContent = fmt(from + Math.round((to - from) * e / DAY) * DAY);
-    if (k < 1) requestAnimationFrame(step); else done();
+    if (k < 1) requestAnimationFrame(step); else end();
   };
   requestAnimationFrame(step);
+  // requestAnimationFrame nie działa w karcie w tle.
+  setTimeout(end, dur + 300);
 }
 
 // ---------- raport ----------
@@ -1480,6 +1605,8 @@ function finish() {
     </div>
     <p id="sendStatus" class="saved" style="color:var(--muted)"></p>`;
   window.scrollTo({ top: 0 });
+  const pctEl = rep.querySelectorAll(".big")[1];
+  if (pctEl) countUp(pctEl, 0, usedPct, (v) => `${Math.round(v)}%`, 1100);
   $("fbSave").addEventListener("click", () => {
     run.feedback = {
       hardest: $("fbHard").value.trim() || null,
@@ -1692,61 +1819,20 @@ function introHtml() {
     </div>
   </div>
   <h1>${tx(UI.title)}</h1>
-  <div class="about">
-    <p>${tr("<b>This is a small game about running a base in space.</b> You play the mission engineer responsible for the base for one year. You'll face 10 situations, one after another: something breaks, time runs short, or you have to choose between “faster” and “safer”.",
-      "<b>To mała gra o prowadzeniu bazy w kosmosie.</b> Wcielasz się w inżyniera misji, który odpowiada za bazę przez jeden rok. Na ekranie pojawi się po kolei 10 sytuacji: coś się psuje, kończy się czas albo trzeba wybrać między „szybciej” a „bezpieczniej”.")}</p>
-    <p>${tr("In each situation you pick one option. There are no right answers: every decision gives you something and costs you something. At the end, the space agency reviews your year, and you'll see what would have happened if you had chosen differently.",
-      "W każdej sytuacji wybierasz jedną z opcji. Nie ma poprawnych odpowiedzi: każda decyzja coś daje i coś kosztuje. Na koniec agencja kosmiczna oceni twój rok, a ty zobaczysz, co by się stało, gdybyś wybrał inaczej.")}</p>
-    <p class="about-note">${tr("This game tests an idea for a bigger game about building a base in space. Your choices and your answers to the short survey at the end will help us design it. No account, no email, no cookies. Results are deleted automatically after 14 days.",
-      "Gra jest testem pomysłu do większej gry o budowie bazy w kosmosie. Twoje wybory i odpowiedzi z krótkiej ankiety na końcu pomogą nam ją zaprojektować. Bez konta, e-maila i ciasteczek. Wyniki są automatycznie usuwane po 14 dniach.")}</p>
-  </div>
-  <h2 class="sec">${tr("Your mission", "Twoja misja")}</h2>
-  <p class="lead">${tr("It's July 8, 2031. A crew of four has just landed at a base on a distant, rocky world, a few days' flight from Earth. You're the mission engineer: for the next year, you make the decisions nobody else will make for you, and you put your name on them.",
-    "Jest 8 lipca 2031. Czwórka astronautów właśnie wylądowała przy bazie na odległym, skalistym globie, kilka dni lotu od Ziemi. Jesteś inżynierem misji: przez najbliższy rok podejmujesz decyzje, których nikt za ciebie nie podejmie, i podpisujesz się pod nimi.")}</p>
-
-  <div class="pressure">
-    <div class="pcard clock">
-      <div class="num">${tr("Deadline · July 2032", "Termin · lipiec 2032")}</div>
-      <h3>${tr("The agency gives you a year", "Agencja daje ci rok")}</h3>
-      <p>${tr("Deliveries from Earth are expensive and rare, so the base has to learn to manage on its own. This year's goal: <b>by July 2032, the base makes a quarter of what it needs by itself</b>. The agency accepts up to 10 days of delay. Beyond that, it logs every day in its report, and the later stages of the program slip with it.",
-        "Dostawy z Ziemi są drogie i rzadkie, więc baza musi nauczyć się radzić sobie sama. Cel tego roku: <b>do lipca 2032 baza ma sama wytwarzać ćwierć tego, czego potrzebuje</b>. Agencja toleruje do 10 dni opóźnienia. Każdy kolejny dzień zapisze w raporcie, a dalsze etapy programu przesuną się razem z nim.")}</p>
-    </div>
-    <div class="pcard">
-      <div class="num">${tr("Risk budget · 1 year", "Budżet ryzyka · 1 rok")}</div>
-      <h3>${tr("The agency lets you take risks", "Agencja pozwala ryzykować")}</h3>
-      <p>${tr("…but only as much as it trusts you. Safe options cost time. Risky ones use up this year's trust reserve. If you go over it, the agency calls a review board.",
-        "…ale tylko tyle, ile ci ufa. Bezpieczne opcje kosztują czas. Ryzykowne zużywają roczny zapas zaufania. Jeśli go przekroczysz, agencja zwoła komisję przeglądową.")}</p>
-    </div>
-    <div class="pcard trust">
-      <div class="num">${tr("Annual report · July 2032", "Raport roczny · lipiec 2032")}</div>
-      <h3>${tr("Trust buys freedom", "Zaufanie daje swobodę")}</h3>
-      <p>${tr("After a year, the agency reviews your work. Trust means a higher risk limit next year, priority for launch windows and approval for experimental technology.",
-        "Po roku agencja oceni twoją pracę. Zaufanie oznacza większy limit ryzyka na kolejny rok, priorytet w oknach startowych i zgodę na technologie eksperymentalne.")}</p>
-    </div>
-  </div>
-
-  <div class="howto">
-    <b>${tr("How it works", "Jak to działa")}</b>
-    <ul>
-      <li>${tr("Situations appear on the timeline at the top. Click an option and confirm with <b>Sign the decision</b>.",
-        "Sytuacje pojawiają się na osi czasu u góry. Kliknij opcję i zatwierdź przyciskiem <b>Podpisuję decyzję</b>.")}</li>
-      <li>${tr("Each risky option shows the <b>chance of failure</b> and its <b>impact</b>. Together they set the <b>trust cost</b>: a likely but harmless failure can be cheap, a rare but critical one expensive.",
-        "Przy każdej ryzykownej opcji widzisz <b>szansę awarii</b> i jej <b>skutek</b>. Razem dają <b>koszt zaufania</b>: częsta, ale niegroźna awaria bywa tania, a rzadka, ale krytyczna drogo kosztuje.")}</li>
-      <li>${tr("You can add one sentence about <b>why</b> you chose it. That's the most valuable part of the test for us.",
-        "Przy decyzji możesz dopisać jedno zdanie, <b>dlaczego</b> tak wybierasz. To dla nas najcenniejsza część testu.")}</li>
-      <li>${tr("The <b>Base status</b> panel shows how safe your oxygen, night power, water and food are. More green bars means safer. A full bar means you have a backup unit: if one breaks, the other keeps working. A single red bar means that after a failure, supplies run out before you can fix it.",
-        "Panel <b>Stan bazy</b> pokazuje, jak bezpieczne są tlen, prąd w nocy, woda i jedzenie. Im więcej zielonych kresek, tym spokojniej. Pełny pasek znaczy, że masz zapasowe urządzenie: gdy jedno się zepsuje, drugie pracuje dalej. Jedna czerwona kreska znaczy, że po awarii zapasy skończą się, zanim zdążysz naprawić.")}</li>
-    </ul>
-  </div>
-
-  <div class="field">
-    <label for="testerName">${tr("Name or nickname (optional)", "Imię lub pseudonim (opcjonalnie)")}</label>
-    <input id="testerName" type="text" maxlength="40" autocomplete="off" placeholder="${tr("e.g. Alex", "np. Ania")}">
+  <p class="lead">${tr("The first crew has just landed on a distant world. You run their base for one year: <b>10 decisions</b>, each a trade between <b>time</b> and <b>safety</b>.",
+    "Pierwsza załoga właśnie wylądowała na odległym globie. Przez rok prowadzisz jej bazę: <b>10 decyzji</b>, w każdej wybierasz między <b>czasem</b> a <b>bezpieczeństwem</b>.")}</p>
+  <div class="hero-rules">
+    <div><b>${tr("Safe costs days", "Bezpiecznie kosztuje dni")}</b><span>${tr("The agency accepts up to 10 days of delay.", "Agencja toleruje do 10 dni opóźnienia.")}</span></div>
+    <div><b>${tr("Risky costs trust", "Ryzyko kosztuje zaufanie")}</b><span>${tr("Use it all up and a review board steps in.", "Zużyjesz całe, wkroczy komisja.")}</span></div>
+    <div><b>${tr("No right answers", "Nie ma dobrych odpowiedzi")}</b><span>${tr("At the end: your report and what would have happened.", "Na koniec raport i co by było, gdyby.")}</span></div>
   </div>
   <div class="start-row">
+    <input id="testerName" type="text" maxlength="40" autocomplete="off" aria-label="${tr("Nickname (optional)", "Pseudonim (opcjonalnie)")}" placeholder="${tr("Nickname (optional)", "Pseudonim (opcjonalnie)")}">
     <button id="startBtn" class="btn primary">${tr("Start", "Zaczynamy")}</button>
     <button id="aggBtn" class="small-link" hidden></button>
   </div>
+  <p class="fine">${tr("A test of an idea for a bigger game. No account, no email, no cookies. Results are deleted after 14 days.",
+    "Test pomysłu do większej gry. Bez konta, e-maila i ciasteczek. Wyniki są usuwane po 14 dniach.")}</p>
   <div id="aggView" hidden></div>`;
 }
 
@@ -1774,6 +1860,7 @@ function renderIntro() {
 // ---------- start ----------
 function start() {
   state = initState();
+  lastStock = null;
   run = newRun($("testerName").value.trim());
   cardIndex = 0;
   busy = false;
