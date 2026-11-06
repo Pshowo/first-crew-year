@@ -262,7 +262,7 @@
   .hero-rules span { font-size: 13.5px; color: var(--muted); }
   .start-row input { flex: 1 1 200px; max-width: 260px; font: inherit; font-size: 14px; color: var(--text); background: var(--bg); border: 1px solid var(--line-2); border-radius: 8px; padding: 9px 11px; }
   .start-row input:focus { outline: none; border-color: var(--time); }
-  .fine { font-size: 12.5px; color: var(--faint); margin: 14px 0 0; }
+  .fine { font-size: 12.5px; color: var(--muted); margin: 14px 0 0; }
   .card { position: relative; }
   .opt { animation: enter .4s both; }
   .opt:nth-child(2) { animation-delay: .06s; }
@@ -304,12 +304,36 @@
   .moment:nth-child(2) { animation-delay: .1s; }
   .moment:nth-child(3) { animation-delay: .2s; }
   .moment:nth-child(n+4) { animation-delay: .3s; }
+  /* Tło: pełne na wstępie i w raporcie, przygaszone w trakcie gry, żeby nie konkurowało z kartą. */
+  .backdrop {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden;
+    transition: opacity .9s ease;
+  }
+  .backdrop::before {
+    content: ""; position: absolute; inset: 0;
+    background: url(img/outpost-dusk.jpg) 72% 100% / cover no-repeat;
+    animation: drift 24s ease-out both;
+  }
+  .backdrop::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(to bottom, var(--bg) 0%, rgba(10, 14, 19, .5) 40%, rgba(10, 14, 19, .2) 75%, rgba(10, 14, 19, .55) 100%);
+  }
+  @keyframes drift { from { transform: scale(1.08); } to { transform: scale(1); } }
+  body.playing .backdrop { opacity: .12; }
+  @media (max-width: 700px) {
+    .backdrop::before {
+      top: auto; height: 50vh; background-size: cover; background-position: 70% 100%;
+      -webkit-mask-image: linear-gradient(to bottom, transparent, #000 35%); mask-image: linear-gradient(to bottom, transparent, #000 35%);
+    }
+  }
+  #intro, #report { text-shadow: 0 1px 3px rgba(0, 0, 0, .85); }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
   }
 </style>
 </head>
 <body>
+<div class="backdrop" aria-hidden="true"></div>
 
 <!-- ============ INTRO ============ -->
 <section id="intro" class="screen"></section>
@@ -1555,6 +1579,7 @@ function finish() {
     : tr(`Year goal moved to ${fmt(T_END - s.schedule * DAY)}. Later stages move with it.`, `Cel roku przesunięty na ${fmt(T_END - s.schedule * DAY)}. Kolejne etapy przesuwają się razem z nim.`);
 
   $("game").hidden = true;
+  document.body.classList.remove("playing");
   const rep = $("report");
   rep.hidden = false;
   rep.innerHTML = `
@@ -1867,6 +1892,7 @@ function start() {
   applyStatic();
   $("intro").hidden = true;
   $("game").hidden = false;
+  document.body.classList.add("playing");
   buildTrack();
   renderTop();
   renderBase();
