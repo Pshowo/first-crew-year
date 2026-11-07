@@ -1335,6 +1335,8 @@ function decide(card, opt) {
   };
   run.choices.push(choice);
   card._before = before;
+  persistRun(run);
+  sync("run", run);
 
   const deltas = diffChips(before, s);
   const tagHtml = {
@@ -1675,8 +1677,8 @@ function persistRun(r) {
   } catch { /* prywatne okno: wynik zostaje tylko do pobrania jako JSON */ }
 }
 // ---------- zapis: Supabase ----------
-// Ten sam projekt i klucz publiczny co telemetria gry (telemetry_config.tres); RLS pozwala tylko dopisać
-// własne przejście i jego ankietę (tools/telemetry/supabase/migrations/005_decision_map_runs.sql).
+// Ten sam projekt i klucz publiczny co telemetria gry (telemetry_config.tres); RLS pozwala zapisać tylko
+// własne przejście od Start, jego postęp do raportu i ankietę (migracje 005 i 007 w tools/telemetry/supabase/migrations/).
 const SUPABASE_URL = "https://rjxjatgeisvlggnjyabg.supabase.co";
 const SUPABASE_KEY = "sb_publishable_dK__yFlzYSBwz3E9LKaqeg_qGg0-1jF";
 const REMOTE = PARAMS.get("remote") !== "0";
@@ -1731,9 +1733,12 @@ const sendRun = (r) => rest("POST", "decision_map_runs?on_conflict=id", {
   params: r.params, choices: r.choices, report: r.report,
 }, "return=minimal,resolution=ignore-duplicates");
 
-// RLS po cichu pomija cudzy wiersz (204 bez zmian), więc prosimy o zwrot `id` i sprawdzamy, że coś się zmieniło.
-async function sendFeedback(r) {
-  const res = await rest("PATCH", `decision_map_runs?id=eq.${r.id}&select=id`, { feedback: r.feedback, feedback_at: new Date().toISOString() }, "return=representation");
+// Postęp (i ankieta) idą PATCH-em na wiersz założony po Start (007). RLS po cichu pomija cudzy wiersz
+// (204 bez zmian), więc prosimy o zwrot `id` i sprawdzamy, że coś się zmieniło.
+async function sendProgress(r, withFeedback) {
+  const body = { choices: r.choices, report: r.report, finished_at: r.finished_at };
+  if (withFeedback) Object.assign(body, { feedback: r.feedback, feedback_at: new Date().toISOString() });
+  const res = await rest("PATCH", `decision_map_runs?id=eq.${r.id}&select=id`, body, "return=representation");
   if (!(await res.json()).length) throw new Error("PATCH: wiersz przejścia niedostępny dla tej sesji");
 }
 
@@ -1743,19 +1748,33 @@ function outbox(kind, id, add) {
   lsSet(OUTBOX_KEY, q);
 }
 
-// Wysyłka jest idempotentna; ankieta najpierw ponawia wiersz przejścia, bo PATCH bez wiersza nic nie zmienia.
-async function sync(kind, r) {
-  if (!REMOTE) return false;
+// Wysyłka jest idempotentna: INSERT (raz na przejście, duplikat ignorowany) zakłada wiersz, PATCH wysyła
+// bieżący stan. Kolejka po kolei, żeby wolniejsza starsza wysyłka nie nadpisała nowszej i żeby
+// równoległe wywołania nie założyły dwóch anonimowych kont.
+const created = new Set();
+let syncChain = Promise.resolve();
+
+const latestSync = {};
+
+function sync(kind, r) {
+  if (!REMOTE) return Promise.resolve(false);
   outbox(kind, r.id, true);
-  try {
-    await sendRun(r);
-    if (kind === "feedback") await sendFeedback(r);
-    outbox(kind, r.id, false);
-    return true;
-  } catch (e) {
-    console.warn("Supabase:", e);
-    return false;
-  }
+  const key = `${kind}:${r.id}`;
+  const token = (latestSync[key] = {});
+  const job = syncChain.then(async () => {
+    try {
+      if (!created.has(r.id)) { await sendRun(r); created.add(r.id); }
+      await sendProgress(r, kind === "feedback");
+      // Wpis w kolejce offline zdejmuje dopiero ostatnia zlecona wysyłka tego przejścia.
+      if (latestSync[key] === token) outbox(kind, r.id, false);
+      return true;
+    } catch (e) {
+      console.warn("Supabase:", e);
+      return false;
+    }
+  });
+  syncChain = job;
+  return job;
 }
 
 // Przejścia, których nie udało się wysłać (brak sieci, zamknięta karta), idą przy kolejnym otwarciu strony.
@@ -1890,6 +1909,8 @@ function start() {
   cardIndex = 0;
   busy = false;
   applyStatic();
+  persistRun(run);
+  sync("run", run);
   $("intro").hidden = true;
   $("game").hidden = false;
   document.body.classList.add("playing");
